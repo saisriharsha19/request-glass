@@ -2510,3 +2510,17 @@ select:focus-visible {
     display: none;
   }
 }
+
+/* Keep Clerk's embedded form inside the account panel on narrow screens. */
+#sign-in .cl-rootBox,
+#sign-in .cl-cardBox {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+#sign-in .cl-cardBox {
+  box-shadow: none;
+}
+#sign-in .cl-card {
+  padding: 24px 16px;
+}
