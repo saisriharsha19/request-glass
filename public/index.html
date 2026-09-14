@@ -3,23 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f7f8fc" />
+    <meta name="theme-color" content="#f5f3ee" />
     <meta
       name="description"
       content="Turn receipts into reminders. Keep return, cancellation, and warranty dates in one private place."
     />
     <title>ReturnRadar — A little backup for your purchases</title>
     <link rel="stylesheet" href="/style.css" />
-    <script src="/ocr/tesseract.min.js" defer></script>
     <script src="/app.js" type="module"></script>
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <a href="/" class="brand"
-          ><span class="radar-logo">◉</span> Return<span>Radar</span></a
+          ><span class="radar-logo" aria-hidden="true">↗</span> Return<span
+            >Radar</span
+          ></a
         >
-        <div class="workspace-label">YOUR PERSONAL SAFETY NET</div>
+        <div class="workspace-label">A LITTLE AHEAD OF LIFE</div>
         <nav aria-label="Purchases">
           <button class="nav-item selected" data-view="all">
             <span>▦</span> Overview <b id="nav-count">0</b></button
@@ -34,8 +35,8 @@
             <span class="green-dot"></span> On your device. In your control.
           </div>
           <p>
-            Your receipts stay in this browser.<br />No account. No inbox
-            access.
+            Receipts saved in this browser.<br />AI assistance only when you
+            ask.
           </p>
           <button id="export" class="sidebar-link">↓ Export backup</button
           ><label class="sidebar-link import-label" role="button" tabindex="0"
@@ -52,48 +53,63 @@
           <div class="breadcrumb">
             Your space <span>/</span> <strong id="view-name">Overview</strong>
           </div>
-          <span class="private-pill">⌁ &nbsp; Private by default</span>
+          <div class="header-right">
+            <span id="today-label"></span
+            ><span class="private-pill"><i></i> Saved on your device</span>
+          </div>
         </header>
         <main>
           <section class="intro">
-            <div>
+            <div class="hero-copy">
               <div class="eyebrow hero-kicker">
-                <span></span> YOUR PURCHASES HAVE A PLOT TWIST.
+                <span class="live-dot"></span> LESS BUYER’S REMORSE. MORE PEACE
+                OF MIND.
               </div>
               <h1>
-                Buy the thing.<br /><em>Keep the possibilities.</em
+                Good purchases.<br /><em>Zero loose ends.</em
                 ><span class="title-spark" aria-hidden="true">✳</span>
               </h1>
               <p>
-                Receipts become reminders. The important dates don’t slip away.
+                Keep the receipt. Catch the deadline.<br />Give future you one
+                less thing to remember.
               </p>
-            </div>
-            <div class="intro-actions">
-              <button class="primary" id="new-purchase">
-                <span>＋</span> Add a purchase</button
-              ><span class="hand-note">a tiny favor for future you ↗</span>
+              <div class="intro-actions">
+                <button class="primary" id="new-purchase">
+                  <span>＋</span> Add a purchase</button
+                ><span class="hand-note"
+                  >Small effort. Big exhale. <span>↗</span></span
+                >
+              </div>
             </div>
             <div class="hero-scene" aria-hidden="true">
               <div class="orbit orbit-one"></div>
               <div class="orbit orbit-two"></div>
-              <div class="scene-spark">✦</div>
+              <div class="scene-spark">✧</div>
               <div class="floating-receipt">
-                <div class="receipt-brand">SOMETHING GOOD™</div>
+                <div class="receipt-brand">
+                  <span>↗</span> FUTURE YOU, INC.
+                </div>
+                <div class="receipt-subtitle">A LITTLE PEACE OF MIND</div>
                 <div class="receipt-dashes"></div>
-                <div class="receipt-line">One excellent purchase <b>✓</b></div>
-                <div class="receipt-line">A little peace of mind <b>✓</b></div>
+                <div class="receipt-line">The thing you love <b>✓</b></div>
+                <div class="receipt-line">
+                  The date you might forget <b>✓</b>
+                </div>
+                <div class="receipt-line">The receipt you’ll need <b>✓</b></div>
                 <div class="receipt-dashes"></div>
-                <div class="receipt-total">REGRETS <b>$0.00</b></div>
+                <div class="receipt-total">ALL IN ONE PLACE <b>Nice.</b></div>
                 <div class="barcode"></div>
-                <span>THANK YOU, PAST ME.</span>
+                <span>THANK YOU FOR THINKING AHEAD.</span>
               </div>
               <div class="radar-buddy">
                 <div class="buddy-eye"></div>
                 <div class="buddy-eye"></div>
                 <div class="buddy-smile"></div>
               </div>
-              <div class="deadline-sticker">↗ OPTIONS: STILL OPEN</div>
-              <span class="scene-mini-spark">✳</span>
+              <div class="deadline-sticker">
+                <span>✓</span> YOU’VE GOT THIS.
+              </div>
+              <span class="scene-mini-spark">✦</span>
             </div>
           </section>
           <div id="storage-warning" class="warning" hidden>
@@ -102,27 +118,27 @@
           </div>
           <section class="stats" aria-label="Purchase overview">
             <div class="stat">
-              <span class="stat-icon violet">▣</span>
+              <span class="stat-icon violet" aria-hidden="true">▣</span>
               <div>
-                <span class="stat-label">Purchases on your radar</span
+                <span class="stat-label">On your radar</span
                 ><strong id="purchase-count">0</strong
-                ><small>Everything, in one place</small>
+                ><small>Purchases you’re keeping track of</small>
               </div>
             </div>
             <div class="stat">
-              <span class="stat-icon amber">◷</span>
+              <span class="stat-icon amber" aria-hidden="true">◷</span>
               <div>
                 <span class="stat-label">Deadlines in 7 days</span
                 ><strong id="deadline-count">0</strong
-                ><small>A little heads-up goes a long way</small>
+                ><small>Returns, trials & other reminders</small>
               </div>
             </div>
             <div class="stat">
               <span class="stat-icon mint">✓</span>
               <div>
-                <span class="stat-label">Receipts safely filed</span
+                <span class="stat-label">Receipts kept</span
                 ><strong id="receipt-count">0</strong
-                ><small>Saved on this device</small>
+                ><small>Originals, right where you need them</small>
               </div>
             </div>
           </section>
@@ -151,20 +167,46 @@
                 ><button data-filter="cancel">Cancellations</button
                 ><button data-filter="warranty">Warranties</button>
               </div>
-              <div id="purchase-list"></div>
+              <div class="list-tools">
+                <span id="list-description"
+                  >Your purchases, sorted by next deadline</span
+                ><label class="sort-label"
+                  >Sort
+                  <select id="sort">
+                    <option value="deadline">Next deadline</option>
+                    <option value="recent">Purchase date</option>
+                    <option value="name">Name A–Z</option>
+                  </select></label
+                >
+              </div>
+              <div id="purchase-list" aria-live="polite"></div>
+              <button id="load-more" class="secondary load-more" hidden>
+                Show more purchases
+              </button>
             </section>
             <aside class="right-column">
-              <section class="calendar-card">
-                <div class="mini-icon">◷</div>
-                <span class="eyebrow">LET YOUR CALENDAR REMEMBER</span>
-                <h2>Your next deadline,<br />already on your mind?</h2>
-                <p>
-                  Add your saved dates to Apple, Google, or Outlook Calendar.
-                  Give future you a heads-up.
-                </p>
+              <section class="timeline-card">
+                <div class="timeline-heading">
+                  <h2>Just around the corner</h2>
+                  <span class="timeline-icon">↗</span>
+                </div>
+                <p>The next dates worth remembering.</p>
+                <div id="upcoming-list"></div>
                 <button id="calendar-all" class="secondary">
                   ↓ Export all reminders</button
-                ><small>Calendar file · Reminders 3 days before</small>
+                ><small>Import into Apple, Google or Outlook Calendar.</small>
+              </section>
+              <section class="calendar-card">
+                <div class="mini-icon">✳</div>
+                <span class="eyebrow">A FAVOR FOR FUTURE YOU</span>
+                <h2>
+                  Receipts are boring.<br />Keeping your options?<br />Pretty
+                  great.
+                </h2>
+                <p>
+                  Save the little details now. Find them in seconds when you
+                  need them.
+                </p>
               </section>
               <section class="how-card">
                 <h3>A receipt. A little peace of mind.</h3>
@@ -191,8 +233,8 @@
                 </div>
               </section>
               <p class="fine-print">
-                No guessed store policies. No made-up savings.<br />Just your
-                purchases and the dates you confirm.
+                Your dates. Your receipts. Your device.<br />Back them up
+                whenever you like.
               </p>
             </aside>
           </div>
@@ -219,7 +261,23 @@
             ×
           </button>
         </div>
-        <section class="capture-section">
+        <div class="capture-tabs" role="group" aria-label="Add purchase method">
+          <button type="button" data-method="paste" aria-pressed="true">
+            ≋ Paste receipt</button
+          ><button type="button" data-method="image" aria-pressed="false">
+            ↑ Image or PDF</button
+          ><button type="button" data-method="manual" aria-pressed="false">
+            ＋ Enter manually
+          </button>
+        </div>
+        <section class="capture-section" data-method="paste">
+          <div class="image-instructions">
+            <strong>A home for that receipt.</strong
+            ><span
+              >Choose a clear image. We’ll read the details on this
+              device.</span
+            >
+          </div>
           <label for="receipt-text">Paste a receipt or order confirmation</label
           ><textarea
             id="receipt-text"
@@ -229,25 +287,57 @@
           ></textarea>
           <div class="capture-actions">
             <label class="upload-button" role="button" tabindex="0"
-              >↑ Add receipt image<input
+              >↑ Add image or PDF<input
                 id="receipt-file"
                 type="file"
-                accept="image/png,image/jpeg,image/webp"
+                accept="image/png,image/jpeg,image/webp,application/pdf,.pdf"
                 hidden /></label
             ><button type="button" id="extract" class="secondary">
               Find the details ✧
             </button>
           </div>
           <p id="ocr-status" class="small" role="status">
-            English image text is read on your device. PNG, JPG or WebP, up to 8
-            MB.
+            Images up to 8 MB. PDFs up to 10 MB / 10 pages. Read on your device;
+            PDF files are not saved.
           </p>
+          <progress
+            id="ocr-progress"
+            max="100"
+            value="0"
+            hidden
+            aria-label="Receipt scanning progress"
+          ></progress
+          ><button type="button" id="stop-ocr" class="text-button" hidden>
+            Stop scanning · enter details myself
+          </button>
           <div id="receipt-preview"></div>
+        </section>
+        <section class="ai-assist">
+          <div>
+            <span class="ai-mark">✦</span>
+            <div>
+              <strong>A little help with the fine print</strong>
+              <p id="ai-status" role="status">
+                Optional: sends extracted text and prepared receipt images
+                together to NVIDIA NIM. Uploads are temporary; review
+                suggestions before saving.
+              </p>
+            </div>
+          </div>
+          <button id="ai-fill" type="button" class="ai-button">
+            Read with AI <span>↗</span>
+          </button>
+          <div id="ai-evidence"></div>
         </section>
         <div class="review-note">
           Review before saving. Text recognition can make mistakes. Only
           explicitly dated return, cancellation, and warranty terms are
           extracted; add other dates yourself.
+        </div>
+        <div class="form-section-heading">
+          <span>01</span>
+          <h3>The purchase</h3>
+          <small>The details you’ll want later</small>
         </div>
         <div class="form-grid">
           <label class="wide"
@@ -280,7 +370,15 @@
               <option>AUD</option>
               <option>JPY</option>
             </select></label
-          ><label>Return deadline<input id="return" type="date" /></label
+          >
+        </div>
+        <div class="form-section-heading">
+          <span>02</span>
+          <h3>The dates</h3>
+          <small>Unknown? Leave it blank.</small>
+        </div>
+        <div class="form-grid">
+          <label>Return deadline<input id="return" type="date" /></label
           ><label
             >Cancel / trial deadline<input id="cancel" type="date" /></label
           ><label>Warranty ends<input id="warranty" type="date" /></label

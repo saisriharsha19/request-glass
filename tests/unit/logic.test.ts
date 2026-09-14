@@ -79,3 +79,23 @@ describe("calendar and backup safety", () => {
     expect(isPurchase({ ...purchase, return: "2099-02-30" })).toBe(false);
   });
 });
+
+test("AI can correct automated guesses while explicit user edits win", async () => {
+  const { mergeSuggestions } = await import("../../public/logic.js");
+  const result = mergeSuggestions(
+    { item: "OCR typo", amount: "12.00", merchant: "My store" },
+    new Set(["merchant"]),
+    {
+      item: { value: "Correct item" },
+      amount: { value: "129.00" },
+      merchant: { value: "Different store" },
+      unknown: { value: "x" },
+    },
+  );
+  expect(result.values).toEqual({
+    item: "Correct item",
+    amount: "129.00",
+    merchant: "My store",
+  });
+  expect(result.applied).toEqual(["item", "amount"]);
+});

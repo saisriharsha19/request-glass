@@ -22,7 +22,7 @@ export function daysAway(date, from = today()) {
       86400000,
   );
 }
-function readDate(line) {
+export function readDate(line) {
   const iso = line.match(/\b(\d{4}-\d{2}-\d{2})\b/);
   if (iso && validDate(iso[1])) return iso[1];
   const written = line.match(
@@ -202,4 +202,24 @@ export function calendar(purchases) {
     }
   lines.push("END:VCALENDAR");
   return { text: lines.map(fold).join("\r\n") + "\r\n", count };
+}
+
+// Explicit user edits win. AI can correct automated OCR suggestions without overwriting them.
+export function mergeSuggestions(current, touched, suggestions) {
+  const values = { ...current },
+    applied = [];
+  for (const [key, field] of Object.entries(suggestions)) {
+    if (
+      !Object.hasOwn(values, key) ||
+      touched.has(key) ||
+      !field ||
+      typeof field.value !== "string"
+    )
+      continue;
+    if (values[key] !== field.value) {
+      values[key] = field.value;
+      applied.push(key);
+    }
+  }
+  return { values, applied };
 }
