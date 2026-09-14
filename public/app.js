@@ -10,6 +10,10 @@ import {
 } from "/logic.js";
 const $ = (s) => document.querySelector(s);
 const sync = new PurchaseSync();
+let finishAccountLoad;
+const accountLoaded = new Promise((resolve) => {
+  finishAccountLoad = resolve;
+});
 let accountReady = false,
   editingVersion = 0,
   draftId = "",
@@ -470,6 +474,7 @@ function preview() {
   root.append(img, remove);
 }
 async function openPurchase(p = null) {
+  await accountLoaded;
   if (!accountReady) {
     syncMessage("Your account is still loading. Please retry in a moment.");
     return;
@@ -869,8 +874,9 @@ $("#import").onchange = async (event) => {
     event.target.value = "";
   }
 };
-function sample() {
-  openPurchase();
+async function sample() {
+  await openPurchase();
+  if (!accountReady) return;
   const date = new Date();
   date.setDate(date.getDate() + 6);
   const future = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -903,11 +909,12 @@ try {
       ? "Up to date across your devices."
       : "Sign in to sync. Device-only purchases stay in this browser.",
   );
-  accountReady = true;
 } catch (error) {
   syncMessage(error.message);
   $("#sync-now").hidden = false;
   $("#sync-now").textContent = "Retry connection";
+} finally {
+  finishAccountLoad();
 }
 $("#sync-now").onclick = () =>
   accountReady ? refreshSync() : location.reload();
