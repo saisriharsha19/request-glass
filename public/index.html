@@ -81,11 +81,11 @@
                 >
               </div>
             </div>
-            <div class="hero-scene" aria-hidden="true">
+            <div class="hero-scene">
               <div class="orbit orbit-one"></div>
               <div class="orbit orbit-two"></div>
               <div class="scene-spark">✧</div>
-              <div class="floating-receipt">
+              <div class="floating-receipt" aria-hidden="true">
                 <div class="receipt-brand">
                   <span>↗</span> FUTURE YOU, INC.
                 </div>
@@ -101,11 +101,17 @@
                 <div class="barcode"></div>
                 <span>THANK YOU FOR THINKING AHEAD.</span>
               </div>
-              <div class="radar-buddy">
+              <button
+                type="button"
+                class="radar-buddy"
+                id="radar-buddy"
+                aria-label="Say hello to Radar"
+                title="Psst. Say hello."
+              >
                 <div class="buddy-eye"></div>
                 <div class="buddy-eye"></div>
                 <div class="buddy-smile"></div>
-              </div>
+              </button>
               <div class="deadline-sticker">
                 <span>✓</span> YOU’VE GOT THIS.
               </div>
@@ -196,10 +202,13 @@
                   ↓ Export all reminders</button
                 ><small>Import into Apple, Google or Outlook Calendar.</small>
               </section>
-              <section class="calendar-card">
+              <section
+                class="calendar-card"
+                aria-label="A note from future you"
+              >
                 <div class="mini-icon">✳</div>
                 <span class="eyebrow">A FAVOR FOR FUTURE YOU</span>
-                <h2>
+                <h2 id="future-note">
                   Receipts are boring.<br />Keeping your options?<br />Pretty
                   great.
                 </h2>
@@ -207,6 +216,9 @@
                   Save the little details now. Find them in seconds when you
                   need them.
                 </p>
+                <button class="note-shuffle" id="note-shuffle">
+                  Another little thought <span aria-hidden="true">↗</span>
+                </button>
               </section>
               <section class="how-card">
                 <h3>A receipt. A little peace of mind.</h3>
@@ -240,7 +252,13 @@
           </div>
           <footer>
             <span>Less “I wish I’d remembered.” More peace of mind.</span
-            ><span>Made for the everyday stuff. ✧</span>
+            ><button
+              class="little-secret"
+              id="little-secret"
+              aria-label="A little surprise"
+            >
+              Made for the everyday stuff. <span aria-hidden="true">✧</span>
+            </button>
           </footer>
         </main>
       </div>

@@ -776,6 +776,7 @@ function sample() {
 }
 function celebrate() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.querySelector(".celebration")?.remove();
   const burst = el("div", "celebration", "✦  ✧  ✹  ✧  ✦");
   burst.setAttribute("aria-hidden", "true");
   document.body.append(burst);
@@ -1023,3 +1024,92 @@ async function prepareVisionSheet(images) {
     );
   return [result];
 }
+
+// Delight is event-driven: no animation loops, scroll tracking, or saved state.
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const playfulAnimations = new WeakMap();
+function wiggle(node, frames, duration = 500) {
+  playfulAnimations.get(node)?.cancel();
+  if (reducedMotion.matches) return;
+  const animation = node.animate(frames, { duration, easing: "ease-out" });
+  playfulAnimations.set(node, animation);
+}
+let greetings = 0;
+const buddyMessages = [
+  "Oh, hi. I’m Radar. Tiny body, excellent memory aid.",
+  "My hobbies? Keeping an eye on things. Both eyes, actually.",
+  "You found my good side. It’s every side.",
+  "Secret unlocked: you’re officially a friend of future you. ✦",
+];
+$("#radar-buddy").addEventListener("click", () => {
+  toast(buddyMessages[greetings % buddyMessages.length]);
+  greetings++;
+  wiggle($("#radar-buddy"), [
+    { transform: "rotate(-9deg)" },
+    { transform: "translateY(-12px) rotate(12deg)", offset: 0.35 },
+    { transform: "rotate(-18deg)", offset: 0.7 },
+    { transform: "rotate(-9deg)" },
+  ]);
+  if (greetings % buddyMessages.length === 0) celebrate();
+});
+const futureNotes = [
+  "A tiny bit of order. A little more room for life.",
+  "Keep the receipt. Lose the mental tab.",
+  "Future you called. They said: excellent work.",
+  "Less rummaging. More getting on with your day.",
+  "Receipts are boring. Keeping your options? Pretty great.",
+];
+let noteIndex = 0;
+$("#note-shuffle").addEventListener("click", () => {
+  const note = $("#future-note");
+  note.textContent = futureNotes[noteIndex++ % futureNotes.length];
+  wiggle(
+    note,
+    [
+      { opacity: 0, transform: "translateY(6px)" },
+      { opacity: 1, transform: "translateY(0)" },
+    ],
+    220,
+  );
+});
+$("#future-note").setAttribute("aria-live", "polite");
+$("#little-secret").addEventListener("click", () => {
+  celebrate();
+  toast(
+    "A very unofficial award for having your life a little more together. ✦",
+  );
+});
+// Hidden word works only outside editors; typing into receipts stays untouched.
+let secretWord = "",
+  lastSecretKey = 0;
+document.addEventListener("keydown", (event) => {
+  if (
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    event.isComposing ||
+    event.target.closest("input, textarea, select, [contenteditable], dialog")
+  )
+    return;
+  if (event.key.length !== 1) {
+    secretWord = "";
+    return;
+  }
+  const now = Date.now();
+  if (now - lastSecretKey > 1500) secretWord = "";
+  lastSecretKey = now;
+  secretWord = (secretWord + event.key.toLowerCase()).slice(-5);
+  if (secretWord === "radar") {
+    secretWord = "";
+    $("#radar-buddy").click();
+    celebrate();
+    toast("Radar reports: good human detected. Carry on. ✦");
+  }
+});
+reducedMotion.addEventListener("change", () => {
+  if (reducedMotion.matches) {
+    for (const node of [$("#radar-buddy"), $("#future-note")])
+      playfulAnimations.get(node)?.cancel();
+    document.querySelectorAll(".celebration").forEach((node) => node.remove());
+  }
+});

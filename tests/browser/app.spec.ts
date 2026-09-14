@@ -434,13 +434,11 @@ test("multimodal sends prepared pages once and clears temporary images after AI"
   });
   await page.goto("/");
   await page.locator("#new-purchase").click();
-  await page
-    .locator("#receipt-file")
-    .setInputFiles({
-      name: "receipt.pdf",
-      mimeType: "application/pdf",
-      buffer: pdf,
-    });
+  await page.locator("#receipt-file").setInputFiles({
+    name: "receipt.pdf",
+    mimeType: "application/pdf",
+    buffer: pdf,
+  });
   await expect(page.locator("#ocr-status")).toContainText(
     "PDF file is not stored",
   );
@@ -451,4 +449,59 @@ test("multimodal sends prepared pages once and clears temporary images after AI"
   await page.locator("#ai-fill").click();
   await expect.poll(() => calls).toBe(2);
   expect(images).toBe(0);
+});
+
+test("playful discoveries are keyboard accessible, bounded, and leave editors alone", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const buddy = page.getByRole("button", { name: "Say hello to Radar" });
+  await buddy.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#toast")).toContainText("I’m Radar");
+  for (let i = 0; i < 3; i++) await buddy.click();
+  await expect(page.locator("#toast")).toContainText("Secret unlocked");
+  await expect(page.locator(".celebration")).toHaveCount(1);
+  await page.getByRole("button", { name: "Another little thought" }).click();
+  await expect(page.locator("#future-note")).toContainText("room for life");
+  await page.locator("#search").fill("radar");
+  await expect(page.locator("#toast")).toContainText("Secret unlocked");
+  await page.locator("#search").blur();
+  await page.keyboard.type("radar");
+  await expect(page.locator("#toast")).toContainText("good human detected");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document.getAnimations().filter((a) => a.playState === "running")
+            .length,
+      ),
+    )
+    .toBe(0);
+  await expect(page.locator(".celebration")).toHaveCount(0);
+});
+
+test("reduced motion keeps discoveries usable without bursts or animations", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Say hello to Radar" }).click();
+  await expect(page.locator("#toast")).toContainText("I’m Radar");
+  await page.getByRole("button", { name: "A little surprise" }).click();
+  await expect(page.locator("#toast")).toContainText("unofficial award");
+  await expect(page.locator(".celebration")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        document.getAnimations().filter((a) => a.playState === "running")
+          .length,
+    ),
+  ).toBe(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

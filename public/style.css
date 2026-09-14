@@ -2376,3 +2376,100 @@ select:focus-visible {
 .purchase-card:hover {
   box-shadow: none;
 }
+
+/* Small, finite interactions. Nothing runs while the page is idle. */
+.radar-buddy {
+  pointer-events: auto;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  color: inherit;
+  z-index: 2;
+  padding-left: 0;
+  padding-right: 0;
+}
+.radar-buddy:focus-visible {
+  outline-color: #fff5c9;
+}
+.note-shuffle,
+.little-secret {
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  min-height: 44px;
+}
+.note-shuffle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 0;
+  color: #536046;
+  font-size: 11px;
+  font-weight: 600;
+}
+.note-shuffle span,
+.little-secret span,
+.stat-icon,
+.timeline-icon,
+.how-card b,
+.primary > span {
+  transition: transform 220ms ease;
+}
+.little-secret {
+  padding: 0;
+}
+#future-note {
+  min-height: 3.7em;
+}
+.purchase-card {
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+button:active:not(:disabled) {
+  translate: 0 1px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .radar-buddy:hover .buddy-eye:nth-child(2) {
+    transform: scaleY(0.3);
+  }
+  .note-shuffle:hover span {
+    transform: translate(3px, -3px);
+  }
+  .little-secret:hover span {
+    transform: rotate(90deg) scale(1.3);
+  }
+  .stat:hover .stat-icon {
+    transform: rotate(-8deg) scale(1.08);
+  }
+  .timeline-card:hover .timeline-icon {
+    transform: translate(2px, -2px);
+  }
+  .how-card > div:hover b {
+    transform: rotate(-10deg);
+  }
+  #new-purchase:hover > span {
+    transform: rotate(90deg);
+  }
+  .purchase-card:hover {
+    border-color: #bac7a3;
+    background-color: #fffef8;
+  }
+  .floating-receipt {
+    transition: translate 280ms ease;
+  }
+  .intro:hover .floating-receipt {
+    translate: 0 -3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled) {
+    translate: none;
+  }
+}
+
+.note-shuffle span,
+.little-secret span {
+  display: inline-block;
+}
