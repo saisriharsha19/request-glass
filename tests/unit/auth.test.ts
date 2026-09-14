@@ -124,3 +124,18 @@ test("worker bounds streamed request bodies even without Content-Length", async 
     ),
   ).toEqual({ text: "receipt" });
 });
+
+test("cloud hosting redirects account documents and API requests to HTTPS", async () => {
+  const runtime: Env = { ASSETS: { fetch: async () => new Response("asset") } };
+  const response = await worker.fetch(
+    new Request("http://radar.example/account?next=home"),
+    runtime,
+  );
+  expect(response.status).toBe(308);
+  expect(response.headers.get("location")).toBe(
+    "https://radar.example/account?next=home",
+  );
+  expect(
+    (await worker.fetch(new Request("http://localhost:3217/"), runtime)).status,
+  ).toBe(200);
+});

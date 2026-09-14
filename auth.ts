@@ -63,6 +63,7 @@ export function securityHeaders(env: AuthEnv) {
     : "";
   return {
     "Content-Security-Policy": `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'${authScripts}; style-src 'self'${config ? " 'unsafe-inline'" : ""}; img-src 'self' data: blob:${config ? " https://img.clerk.com" : ""}; connect-src 'self'${config ? ` ${host} https://*.protect.clerk.com` : ""}; frame-src 'self'${config ? " https://challenges.cloudflare.com https://*.protect.clerk.com" : ""}; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`,
+    "Strict-Transport-Security": "max-age=31536000",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
   };

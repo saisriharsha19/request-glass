@@ -55,6 +55,13 @@ export async function readBody(request: Request, maxBytes = 1500000) {
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
+    if (
+      url.protocol === "http:" &&
+      !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+    ) {
+      url.protocol = "https:";
+      return Response.redirect(url.href, 308);
+    }
     if (url.pathname === "/healthz")
       return new Response("ok", { headers: securityHeaders(env) });
     if (url.pathname === "/api/auth/config" && request.method === "GET")
@@ -150,6 +157,10 @@ export default {
         status: 405,
         headers: { Allow: "GET, HEAD" },
       });
-    return env.ASSETS.fetch(request);
+    const asset = await env.ASSETS.fetch(request);
+    const response = new Response(asset.body, asset);
+    for (const [name, value] of Object.entries(securityHeaders(env)))
+      response.headers.set(name, value);
+    return response;
   },
 };

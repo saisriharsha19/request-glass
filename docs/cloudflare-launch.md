@@ -50,7 +50,7 @@ Checked 2026-09-14 against official provider documentation:
 
 | Component | Published free allowance | Relevant boundary |
 | --- | --- | --- |
-| Workers static assets | Free, unlimited static-asset requests | Static-first routing keeps CSS, JS and OCR/PDF assets out of dynamic Worker request usage. |
+| Workers static assets | Free, unlimited static-asset requests | Static-first routing keeps CSS, JS and OCR/PDF assets out of dynamic Worker request usage. Main/account document requests run the Worker to enforce HTTPS. |
 | Workers dynamic API | 100,000 requests/day; 10 ms CPU/request | Network waits are distinct from CPU. A workload/load test is still needed. |
 | Clerk production | 50,000 monthly retained users | Production domain required; development limited to 100 users. |
 | D1, not provisioned | 5 GB total, 5 million rows read/day, 100,000 rows written/day | Indexed queries and actual row sizes determine capacity. No sync data is stored yet. |
