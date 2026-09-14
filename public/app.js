@@ -321,7 +321,11 @@ function render() {
     card.append(actions);
     if (p.hasImage || p.text.trim())
       card.append(
-        el("div", "receipt-status", "✓ Receipt saved on this device"),
+        el(
+          "div",
+          "receipt-status",
+          p.hasImage ? "✓ Original receipt saved" : "✓ Receipt text saved",
+        ),
       );
     fragment.append(card);
   }
@@ -417,7 +421,7 @@ async function openPurchase(p = null) {
   for (const key of fields)
     $(`#${key}`).value = p?.[key] ?? (key === "currency" ? "USD" : "");
   $("#ocr-status").textContent =
-    "Images up to 8 MB. PDFs up to 10 MB / 10 pages. Read on your device; PDF files are not saved.";
+    "Images up to 8 MB. PDFs up to 10 MB / 10 pages. Read on your device; Uploaded files are not saved.";
   preview();
   $("#purchase-dialog").showModal();
   if (p?.hasImage) {
