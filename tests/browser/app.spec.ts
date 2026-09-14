@@ -505,3 +505,29 @@ test("reduced motion keeps discoveries usable without bursts or animations", asy
     ),
   ).toBe(true);
 });
+
+test("small phones keep navigation usable and the purchase form within the viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    320,
+  );
+  await page.getByRole("button", { name: "Say hello to Radar" }).click();
+  await expect(page.locator("#toast")).toContainText("I’m Radar");
+  await page.locator("#new-purchase").click();
+  await page.locator('button[data-method="manual"]').click();
+  await page.locator("#item").fill("Phone-sized purchase form");
+  await page.setViewportSize({ width: 320, height: 380 });
+  await page.locator("#save").click();
+  await expect(page.locator(".purchase-card")).toContainText(
+    "Phone-sized purchase form",
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    320,
+  );
+  await page.getByRole("link", { name: "Your account" }).click();
+  const panel = await page.locator(".account-panel").boundingBox();
+  expect(panel!.y).toBeLessThan(150);
+});

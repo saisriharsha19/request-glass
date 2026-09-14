@@ -2524,3 +2524,446 @@ select:focus-visible {
 #sign-in .cl-card {
   padding: 24px 16px;
 }
+
+/* Phone layout: readable content, full-width tasks, and stable touch targets. */
+@media (max-width: 720px) {
+  .sidebar {
+    padding: 18px 16px 12px;
+  }
+  .sidebar-bottom {
+    position: static;
+    flex-direction: row;
+    gap: 20px;
+    margin-top: 8px;
+    align-items: center;
+  }
+  .sidebar-link {
+    font-size: 13px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 0;
+  }
+  nav {
+    margin-top: 14px;
+    gap: 4px;
+  }
+  .nav-item {
+    font-size: 13px;
+    min-height: 44px;
+    padding: 10px 8px;
+  }
+  .page > header {
+    padding: 0 16px;
+    min-height: 52px;
+    height: auto;
+  }
+  .breadcrumb {
+    display: none;
+  }
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .account-link {
+    font-size: 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .private-pill {
+    font-size: 11px;
+  }
+  .page main {
+    padding: 16px 16px 0;
+  }
+  .intro {
+    min-height: 260px;
+    padding: 24px 20px;
+    animation: none;
+  }
+  .hero-kicker {
+    font-size: 9px;
+    line-height: 1.6;
+    letter-spacing: 0.7px;
+  }
+  .intro h1 {
+    font-size: clamp(30px, 8.5vw, 40px);
+    letter-spacing: -1.5px;
+    margin: 18px 0 14px;
+  }
+  .intro p {
+    font-size: 14px;
+    max-width: 100%;
+    line-height: 1.6;
+  }
+  .title-spark {
+    display: none;
+  }
+  .intro-actions {
+    margin-top: 20px;
+  }
+  .intro .primary {
+    font-size: 14px;
+    min-height: 48px;
+  }
+  .hero-scene {
+    width: 70px;
+    height: 70px;
+    right: 12px;
+    bottom: 14px;
+    transform: none;
+  }
+  .hero-scene > :not(.radar-buddy) {
+    display: none;
+  }
+  .radar-buddy {
+    right: 0;
+    bottom: 0;
+    animation: none;
+  }
+  .stats {
+    gap: 8px;
+    margin: 16px 0 24px;
+  }
+  .stat {
+    padding: 14px 10px;
+    min-width: 0;
+  }
+  .stat-icon,
+  .stat small {
+    display: none;
+  }
+  .stat-label {
+    font-size: 12px;
+    min-height: 34px;
+    line-height: 1.4;
+  }
+  .stat strong {
+    font-size: 27px;
+    margin: 8px 0 0;
+  }
+  .section-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .section-heading h2 {
+    font-size: 21px;
+  }
+  .search-wrap {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+  }
+  .search-wrap input {
+    font-size: 16px !important;
+    min-width: 0;
+  }
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .filter-row button {
+    font-size: 13px;
+    min-height: 44px;
+    padding: 10px 8px;
+  }
+  .list-tools {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .list-tools > span {
+    font-size: 12px;
+    max-width: 100%;
+  }
+  .sort-label {
+    font-size: 12px;
+  }
+  .sort-label select {
+    font-size: 16px;
+    min-height: 44px;
+    max-width: 180px;
+  }
+  .empty-state {
+    padding: 24px 16px;
+  }
+  .empty-state p {
+    font-size: 14px;
+  }
+  .empty-actions {
+    flex-wrap: wrap;
+  }
+  .empty-actions .primary,
+  .empty-actions .text-button {
+    font-size: 14px;
+    min-height: 48px;
+  }
+  .empty-hint {
+    font-size: 11px;
+    flex-wrap: wrap;
+    line-height: 1.7;
+  }
+  .right-column {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .timeline-card,
+  .calendar-card {
+    padding: 22px;
+    margin-top: 0;
+  }
+  .timeline-heading h2 {
+    font-size: 19px;
+  }
+  .timeline-card > p,
+  .timeline-empty p,
+  .calendar-card p {
+    font-size: 14px;
+  }
+  .timeline-empty strong,
+  .timeline-copy strong {
+    font-size: 15px;
+  }
+  .timeline-copy p {
+    font-size: 13px;
+  }
+  .timeline-card .secondary {
+    font-size: 14px;
+    min-height: 48px;
+  }
+  .timeline-card small {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .calendar-card .eyebrow {
+    font-size: 10px;
+  }
+  .calendar-card p {
+    max-width: none;
+  }
+  .note-shuffle {
+    font-size: 13px;
+  }
+  .purchase-info h3 {
+    font-size: 17px;
+    overflow-wrap: anywhere;
+  }
+  .purchase-info p,
+  .purchase-note {
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+  .price-label {
+    font-size: 15px;
+  }
+  .deadline {
+    font-size: 12px;
+  }
+  .card-actions {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .card-actions button {
+    font-size: 14px;
+    min-height: 44px;
+  }
+  footer {
+    font-size: 12px;
+    flex-wrap: wrap;
+    gap: 12px;
+    line-height: 1.6;
+  }
+  body:has(dialog[open]) {
+    overflow: hidden;
+  }
+  #purchase-dialog {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 20px 16px 0;
+    overscroll-behavior: contain;
+  }
+  #purchase-dialog[open] {
+    animation: none;
+  }
+  .modal-header h2 {
+    font-size: 27px;
+  }
+  .icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .capture-tabs button {
+    font-size: 13px;
+    min-height: 48px;
+  }
+  .capture-section > label,
+  .upload-button,
+  .capture-actions .secondary {
+    font-size: 14px;
+  }
+  .capture-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .capture-actions .secondary,
+  .upload-button {
+    min-height: 44px;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .form-grid label {
+    font-size: 14px;
+    min-width: 0;
+  }
+  .form-grid .wide {
+    grid-column: auto;
+  }
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    font-size: 16px;
+  }
+  .form-section-heading {
+    flex-wrap: wrap;
+  }
+  .form-section-heading small {
+    font-size: 12px;
+  }
+  .review-note,
+  .small,
+  .ai-assist p {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .ai-assist strong {
+    font-size: 14px;
+  }
+  .ai-button {
+    font-size: 14px;
+    min-height: 44px;
+  }
+  .modal-footer {
+    bottom: 0;
+    background: #fffef9;
+    padding: 14px 0 max(14px, env(safe-area-inset-bottom));
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .modal-footer .primary,
+  .modal-footer .secondary,
+  .danger {
+    min-height: 48px;
+    font-size: 14px;
+  }
+  #toast {
+    max-width: calc(100vw - 24px);
+    font-size: 14px;
+  }
+  .account-layout {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    gap: 28px;
+  }
+  .account-panel {
+    order: -1;
+    width: 100%;
+    padding: 20px 16px;
+  }
+  .account-header {
+    height: auto;
+    min-height: 72px;
+    padding: 14px 16px;
+    flex-wrap: wrap;
+  }
+  .account-header .brand {
+    font-size: 20px;
+  }
+  .back-link {
+    font-size: 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .account-panel p,
+  .guest-link {
+    font-size: 14px;
+  }
+  .guest-link {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .account-intro {
+    padding: 0 4px;
+  }
+  .account-intro h1 {
+    font-size: 32px;
+  }
+  #sign-in input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  #sign-in button {
+    min-height: 44px;
+  }
+}
+@media (max-width: 720px) {
+  .sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .nav-item {
+    min-width: 0;
+    gap: 5px;
+    font-size: 12px;
+    padding: 10px 5px;
+  }
+  .nav-item > span {
+    display: none;
+  }
+  .hero-scene {
+    z-index: 2;
+  }
+}
+@media (max-width: 720px) {
+  .ai-assist {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ai-assist > div:first-child {
+    flex: none;
+    min-width: 0;
+    width: 100%;
+  }
+  .ai-button {
+    align-self: flex-start;
+  }
+  .ai-assist p {
+    color: #675874;
+  }
+  .capture-section > label,
+  .capture-section .small,
+  .form-grid label,
+  .purchase-info p,
+  .timeline-empty p,
+  .timeline-card > p,
+  .timeline-card small,
+  .stat-label {
+    color: #606951;
+  }
+}
