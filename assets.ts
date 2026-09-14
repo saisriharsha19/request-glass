@@ -4,6 +4,7 @@ export const assets: Record<string, string> = {
   "/account.html": "public/account.html",
   "/account.js": "public/account.js",
   "/auth-client.js": "public/auth-client.js",
+  "/sync.js": "public/sync.js",
   "/app.js": "public/app.js",
   "/logic.js": "public/logic.js",
   "/pdf.js": "public/pdf.js",

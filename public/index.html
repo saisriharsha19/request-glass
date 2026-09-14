@@ -32,12 +32,9 @@
         </nav>
         <div class="sidebar-bottom">
           <div class="local-badge">
-            <span class="green-dot"></span> On your device. In your control.
+            <span class="green-dot"></span> Your details. In your control.
           </div>
-          <p>
-            Receipts saved in this browser.<br />AI assistance only when you
-            ask.
-          </p>
+          <p>Guest purchases stay here.<br />Sign in to sync your account.</p>
           <button id="export" class="sidebar-link">↓ Export backup</button
           ><label class="sidebar-link import-label" role="button" tabindex="0"
             >↑ Restore backup<input
@@ -56,10 +53,24 @@
           <div class="header-right">
             <a class="account-link" href="/account">Your account ↗</a>
             <span id="today-label"></span
-            ><span class="private-pill"><i></i> Saved on your device</span>
+            ><span class="private-pill"
+              ><i></i><span id="storage-state">Saved on your device</span></span
+            >
           </div>
         </header>
         <main>
+          <section class="sync-strip" aria-label="Account and sync">
+            <div>
+              <strong id="sync-title">Your purchases</strong>
+              <p id="sync-message" role="status">Checking your account…</p>
+            </div>
+            <div class="sync-actions">
+              <button id="sync-now" class="secondary" hidden>Sync now</button
+              ><button id="claim-local" class="secondary" hidden>
+                Add device purchases</button
+              ><a id="sync-signin" href="/account">Sign in to sync ↗</a>
+            </div>
+          </section>
           <section class="intro">
             <div class="hero-copy">
               <div class="eyebrow hero-kicker">
@@ -426,6 +437,9 @@
           </button>
         </div>
         <p id="form-error" class="error" role="alert"></p>
+        <button type="button" id="conflict-backup" class="secondary" hidden>
+          Download my unsaved version
+        </button>
       </form>
     </dialog>
     <div id="toast" role="status" aria-live="polite"></div>

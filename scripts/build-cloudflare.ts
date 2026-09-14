@@ -24,9 +24,7 @@ await cp(
   "dist-cloudflare/pdf/fonts",
   { recursive: true },
 );
-const headers = Object.entries(
-  securityHeaders({ CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY }),
-)
+const headers = Object.entries(securityHeaders())
   .map(([key, value]) => `  ${key}: ${value}`)
   .join("\n");
 await Bun.write(
@@ -34,5 +32,5 @@ await Bun.write(
   `/*\n${headers}\n  Cache-Control: no-cache\n/ocr/*\n  Cache-Control: public, max-age=86400\n/pdf/*\n  Cache-Control: public, max-age=86400\n`,
 );
 console.log(
-  "Cloudflare assets built; no account or receipt database configured.",
+  "Cloudflare assets built with first-party authentication and purchase sync.",
 );

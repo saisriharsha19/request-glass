@@ -3,7 +3,21 @@ const host =
   process.env.HOST ?? (process.env.RENDER === "true" ? "0.0.0.0" : "127.0.0.1");
 const port = Number(process.env.PORT ?? 3000);
 import { assets } from "./assets";
-import { authConfig, accountIdentity, securityHeaders } from "./auth";
+import { securityHeaders } from "./auth";
+import { accountApi } from "./account-api";
+import { localDatabase } from "./local-db";
+const accountEnv =
+  process.env.RENDER === "true"
+    ? { AI_REQUIRES_LOGIN: false }
+    : {
+        AI_REQUIRES_LOGIN: false,
+        DB: localDatabase(
+          process.env.ACCOUNT_DB_PATH || ".local/accounts.sqlite",
+          await Bun.file(
+            new URL("./migrations/0001_accounts.sql", import.meta.url),
+          ).text(),
+        ),
+      };
 let aiWindow = Date.now(),
   aiCalls = 0,
   aiInFlight = 0;
@@ -27,24 +41,9 @@ Bun.serve({
   port,
   async fetch(request) {
     const path = new URL(request.url).pathname;
-    const headers = securityHeaders({
-      CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
-    });
-    if (path === "/api/auth/config" && request.method === "GET")
-      return json({
-        auth: authConfig({
-          CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
-        }),
-        sync: "local-only",
-      });
-    if (path === "/api/account" && request.method === "GET") {
-      const user = await accountIdentity(request, {
-        CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
-      });
-      return user
-        ? json({ user, sync: "local-only" })
-        : json({ error: "Sign in to view your account." }, 401);
-    }
+    const headers = securityHeaders();
+    const accountResponse = await accountApi(request, accountEnv);
+    if (accountResponse) return accountResponse;
     if (path === "/api/ai/extract" && request.method === "POST") {
       const origin = request.headers.get("origin");
       if (

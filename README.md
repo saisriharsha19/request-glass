@@ -32,7 +32,7 @@ Images: PNG/JPEG/WebP up to 8 MB and 24 megapixels. PDFs: up to 10 MB / 10 pages
 
 NVIDIA processes submitted material under its own service terms; the app cannot guarantee deletion from NVIDIA systems. Receipts saved by the previous version remain available and are migrated without loss. Newly uploaded replacements follow the temporary-file behavior. Backups can contain legacy receipt images, so keep them private.
 
-Clearing browser storage removes saved purchases. Optional Clerk sign-in links your identity across devices; purchases are not synced or uploaded. Export/restore JSON backups supports up to 50 MB / 2,000 purchases. Restoring replaces matching IDs and preserves other purchases.
+Guest purchases stay in browser storage. Native username/password accounts sync purchase details through Cloudflare D1. Original PDFs and images are never uploaded to the sync database. Use Add device purchases to import guest details explicitly. Export/restore JSON backups supports up to 50 MB / 2,000 purchases. Restoring replaces matching IDs and preserves other purchases.
 
 ## NVIDIA NIM configuration
 
@@ -71,4 +71,4 @@ Tests cover storage/migration, receipt/PDF extraction, no new file persistence, 
 
 ## Account linkage and Cloudflare migration
 
-The Cloudflare deployment target and account setup are documented in [docs/cloudflare-launch.md](docs/cloudflare-launch.md). The new hosting address is https://return-radar.return-radar.workers.dev. Production login still requires Clerk configuration. The account page supports Clerk sign-in/profile/sign-out; purchase data stays in the browser. The Cloudflare AI endpoint requires a verified account. No D1 database is provisioned yet.
+The Cloudflare deployment and account setup are documented in [docs/cloudflare-launch.md](docs/cloudflare-launch.md). Open https://return-radar.return-radar.workers.dev. Accounts use native username/password login and one D1 database, with no external identity service. Save the recovery key shown at registration; it replaces email-based password recovery. Previous Google/Clerk users should create a native account and import device purchases once. Cloudflare AI assistance requires sign-in.

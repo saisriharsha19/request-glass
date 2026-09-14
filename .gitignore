@@ -9,3 +9,4 @@ dist-cloudflare/
 .wrangler/
 .dev.vars
 .dev.vars.*
+.local/

@@ -2511,20 +2511,6 @@ select:focus-visible {
   }
 }
 
-/* Keep Clerk's embedded form inside the account panel on narrow screens. */
-#sign-in .cl-rootBox,
-#sign-in .cl-cardBox {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-#sign-in .cl-cardBox {
-  box-shadow: none;
-}
-#sign-in .cl-card {
-  padding: 24px 16px;
-}
-
 /* Phone layout: readable content, full-width tasks, and stable touch targets. */
 @media (max-width: 720px) {
   .sidebar {
@@ -2965,5 +2951,222 @@ select:focus-visible {
   .timeline-card small,
   .stat-label {
     color: #606951;
+  }
+}
+
+/* Native accounts share the app's controls: no third-party widgets or resizing. */
+.native-account .account-panel {
+  padding: 28px;
+}
+.account-badge {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #e7eddb;
+  color: #415236;
+  font-size: 27px;
+  margin-bottom: 20px;
+}
+.account-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: #eeefe7;
+  border-radius: 9px;
+  padding: 4px;
+  margin: 22px 0;
+}
+.account-tabs button {
+  min-height: 44px;
+  background: transparent;
+  border-radius: 6px;
+  color: #59634e;
+  font-size: 14px;
+}
+.account-tabs button[aria-pressed="true"] {
+  background: #fffefa;
+  color: #263525;
+}
+#account-form {
+  display: grid;
+  gap: 20px;
+}
+#account-form label {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  color: #45503e;
+}
+#account-form input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+#account-form .primary {
+  min-height: 48px;
+  font-size: 15px;
+}
+.password-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 60px;
+  gap: 8px;
+}
+.password-control button {
+  background: #edf0e5;
+  border-radius: 6px;
+  color: #495a3e;
+  font-size: 13px;
+}
+.account-help {
+  color: #68725e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.account-text-button {
+  min-height: 44px;
+  background: transparent;
+  color: #53673e;
+  font-size: 14px;
+  padding: 8px 0;
+  margin-top: 12px;
+}
+.native-account .account-panel h2 {
+  overflow-wrap: anywhere;
+}
+.sync-ready {
+  background: #eaf0df;
+  border-radius: 9px;
+  padding: 16px;
+  color: #415735;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 20px 0;
+}
+.account-dashboard-link {
+  width: 100%;
+  min-height: 48px;
+}
+#sign-out {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 48px;
+}
+#recovery-key {
+  display: block;
+  overflow-wrap: anywhere;
+  user-select: all;
+  font-size: 15px;
+  line-height: 1.7;
+  background: #f0f2e9;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+#recovery-result button {
+  min-height: 48px;
+  width: 100%;
+}
+.recovery-confirm {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  min-height: 64px;
+  padding: 14px 0;
+}
+.recovery-confirm input {
+  width: 20px;
+  height: 20px;
+}
+.sync-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: #edf0e5;
+  border: 1px solid #dee4d3;
+  border-radius: 10px;
+}
+.sync-strip strong {
+  font-size: 14px;
+  color: #374b2e;
+}
+.sync-strip p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #5a684e;
+  max-width: 540px;
+  margin-top: 3px;
+}
+.sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.sync-actions button,
+.sync-actions a {
+  font-size: 13px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: #405b2f;
+}
+#conflict-backup {
+  margin: 12px 0 24px;
+  min-height: 44px;
+}
+@media (max-width: 720px) {
+  .native-account .account-panel {
+    padding: 22px 18px;
+  }
+  .native-account .account-layout {
+    padding: 16px;
+  }
+  .native-account .account-panel h2 {
+    font-size: 29px;
+  }
+  .sync-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .sync-actions {
+    width: 100%;
+  }
+  #purchase-dialog {
+    height: 100%;
+    height: 100svh;
+    max-height: 100svh;
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+  textarea {
+    resize: none;
+  }
+  #purchase-form,
+  #account-form {
+    min-width: 0;
+  }
+  #purchase-form input,
+  #purchase-form textarea,
+  #purchase-form select {
+    max-width: 100%;
+  }
+  .modal-header,
+  .modal-footer,
+  #account-form,
+  #account-form input,
+  #account-form button {
+    transition: none;
   }
 }

@@ -1,3 +1,4 @@
+import { PurchaseSync } from "/sync.js";
 import {
   kinds,
   today,
@@ -8,6 +9,71 @@ import {
   mergeSuggestions,
 } from "/logic.js";
 const $ = (s) => document.querySelector(s);
+const sync = new PurchaseSync();
+let accountReady = false,
+  editingVersion = 0,
+  draftId = "",
+  syncRunning = false;
+const accountUpdates =
+  typeof BroadcastChannel === "function"
+    ? new BroadcastChannel("returnradar-account")
+    : null;
+function syncMessage(text) {
+  $("#sync-message").textContent = text;
+}
+async function savePurchase(p, version = 0) {
+  if (sync.user) {
+    const saved = await sync.save(p, version);
+    loadSequence++;
+    purchases = [...purchases.filter((item) => item.id !== saved.id), saved];
+  } else
+    await transaction("readwrite", (store, receipts) =>
+      putPurchase(store, receipts, p),
+    );
+}
+async function afterWrite() {
+  if (sync.user) {
+    render();
+    syncMessage(
+      "Saved to your account. Other devices will pick up the change.",
+    );
+  } else await reload();
+}
+async function updateAccountUI() {
+  $("#sync-title").textContent = sync.user
+    ? `Hi, ${sync.user.name}.`
+    : "On this device";
+  $("#storage-state").textContent = sync.user
+    ? "Account sync"
+    : "Saved on your device";
+  $("#sync-now").hidden = !sync.user;
+  $("#sync-signin").hidden = !!sync.user;
+  const local = db ? await transaction("readonly", (s) => s.getAll()) : [];
+  $("#claim-local").hidden =
+    !sync.user ||
+    !local.some((p) => isPurchase(p) && !purchases.some((c) => c.id === p.id));
+}
+async function refreshSync() {
+  if (
+    !sync.user ||
+    syncRunning ||
+    document.hidden ||
+    $("#purchase-dialog").open
+  )
+    return;
+  syncRunning = true;
+  $("#sync-now").disabled = true;
+  try {
+    await reload();
+    await updateAccountUI();
+    syncMessage("Up to date across your devices.");
+  } catch (error) {
+    syncMessage(error.message);
+  } finally {
+    syncRunning = false;
+    $("#sync-now").disabled = false;
+  }
+}
 const fields = [
   "item",
   "merchant",
@@ -135,9 +201,11 @@ function transaction(mode, action) {
 }
 async function reload() {
   const sequence = ++loadSequence;
-  const result = await transaction("readonly", (store) => store.getAll());
+  const result = sync.user
+    ? await sync.list()
+    : await transaction("readonly", (store) => store.getAll());
   if (sequence !== loadSequence) return;
-  purchases = result.filter(isPurchase);
+  if (result) purchases = result.filter(isPurchase);
   render();
 }
 async function getReceipt(id) {
@@ -302,17 +370,20 @@ function render() {
     const archive = el("button", "", p.archived ? "Restore" : "Archive");
     archive.onclick = async () => {
       try {
-        await transaction("readwrite", (s) =>
-          s.put({ ...p, archived: !p.archived }),
-        );
-        await reload();
+        if (sync.user)
+          await savePurchase({ ...p, archived: !p.archived }, p._version);
+        else
+          await transaction("readwrite", (s) =>
+            s.put({ ...p, archived: !p.archived }),
+          );
+        await afterWrite();
         toast(
           p.archived
             ? "Back on your radar."
             : "Archived. You can restore it anytime.",
         );
-      } catch {
-        toast("Could not save that change. Please try again.");
+      } catch (error) {
+        toast(error.message || "Could not save that change. Please try again.");
       }
     };
     actions.append(edit);
@@ -399,6 +470,10 @@ function preview() {
   root.append(img, remove);
 }
 async function openPurchase(p = null) {
+  if (!accountReady) {
+    syncMessage("Your account is still loading. Please retry in a moment.");
+    return;
+  }
   visionImages = [];
   transientReceipt = false;
   const sequence = ++openSequence;
@@ -412,6 +487,9 @@ async function openPurchase(p = null) {
     field.classList.remove("ai-filled");
   setMethod("paste");
   editing = p?.id || null;
+  editingVersion = p?._version || 0;
+  draftId = crypto.randomUUID();
+  $("#conflict-backup").hidden = true;
   receiptImage = p?.image || null;
   $("#purchase-form").reset();
   $("#form-error").textContent = "";
@@ -624,7 +702,7 @@ $("#purchase-form").onsubmit = async (event) => {
   if (busy) return;
   $("#form-error").textContent = "";
   const p = {
-    id: editing || crypto.randomUUID(),
+    id: editing || draftId,
     image: transientReceipt ? null : receiptImage,
     text: $("#receipt-text").value,
     archived: purchases.find((p) => p.id === editing)?.archived || false,
@@ -638,10 +716,8 @@ $("#purchase-form").onsubmit = async (event) => {
   }
   $("#save").disabled = true;
   try {
-    await transaction("readwrite", (s, receipts) =>
-      putPurchase(s, receipts, p),
-    );
-    await reload();
+    await savePurchase(p, editingVersion);
+    await afterWrite();
     $("#purchase-dialog").close();
     celebrate();
     toast(
@@ -649,9 +725,19 @@ $("#purchase-form").onsubmit = async (event) => {
         ? "Purchase updated. Future you is in the loop."
         : "On your radar! Add a calendar reminder to get a heads-up.",
     );
-  } catch {
-    $("#form-error").textContent =
-      "Could not save to this browser. Storage may be full or disabled. Your form is still here.";
+  } catch (error) {
+    $("#form-error").textContent = sync.user
+      ? error.message
+      : "Could not save to this browser. Storage may be full or disabled. Your form is still here.";
+    if (sync.user) {
+      $("#conflict-backup").hidden = false;
+      $("#conflict-backup").onclick = () =>
+        download(
+          JSON.stringify({ version: 1, purchases: [p] }, null, 2),
+          "application/json",
+          "returnradar-unsaved-purchase.json",
+        );
+    }
   } finally {
     $("#save").disabled = false;
   }
@@ -663,15 +749,21 @@ $("#delete").onclick = async () => {
   )
     return;
   try {
-    await transaction("readwrite", (s, receipts) => {
-      s.delete(editing);
-      receipts.delete(editing);
-    });
-    await reload();
+    if (sync.user) {
+      await sync.remove({ id: editing, _version: editingVersion });
+      loadSequence++;
+      purchases = purchases.filter((p) => p.id !== editing);
+    } else
+      await transaction("readwrite", (s, receipts) => {
+        s.delete(editing);
+        receipts.delete(editing);
+      });
+    await afterWrite();
     $("#purchase-dialog").close();
     toast("Purchase deleted.");
-  } catch {
-    $("#form-error").textContent = "Could not delete. Try again.";
+  } catch (error) {
+    $("#form-error").textContent =
+      error.message || "Could not delete. Try again.";
   }
 };
 for (const btn of document.querySelectorAll("[data-view]"))
@@ -710,7 +802,8 @@ $("#load-more").onclick = () => {
 };
 $("#calendar-all").onclick = () => reminders(purchases);
 $("#export").onclick = async () => {
-  if (!db) return toast("Storage is unavailable; no backup can be read.");
+  if (!db && !sync.user)
+    return toast("Storage is unavailable; no backup can be read.");
   $("#export").disabled = true;
   try {
     const full = [];
@@ -750,15 +843,28 @@ $("#import").onchange = async (event) => {
       )
     )
       return;
-    await transaction("readwrite", (s, receipts) => {
-      for (const p of data.purchases) putPurchase(s, receipts, p);
-    });
-    await reload();
+    if (sync.user) {
+      for (const p of data.purchases)
+        await savePurchase(
+          p,
+          purchases.find((item) => item.id === p.id)?._version || 0,
+        );
+    } else
+      await transaction("readwrite", (s, receipts) => {
+        for (const p of data.purchases) putPurchase(s, receipts, p);
+      });
+    await afterWrite();
     toast("Backup restored. Welcome back.");
-  } catch {
-    toast(
-      "Could not restore. Check the backup format (version 1, up to 50 MB) and available storage.",
-    );
+  } catch (error) {
+    if (sync.user) {
+      render();
+      toast(
+        `Restore stopped: ${error.message} Purchases already confirmed remain saved; your backup file is unchanged.`,
+      );
+    } else
+      toast(
+        "Could not restore. Check the backup format (version 1, up to 50 MB) and available storage.",
+      );
   } finally {
     event.target.value = "";
   }
@@ -784,14 +890,70 @@ function celebrate() {
 }
 try {
   db = await openDB();
-  await reload();
 } catch {
   $("#storage-warning").hidden = false;
-  render();
 }
+try {
+  await sync.initialize();
+  await reload();
+  accountReady = true;
+  await updateAccountUI();
+  syncMessage(
+    sync.user
+      ? "Up to date across your devices."
+      : "Sign in to sync. Device-only purchases stay in this browser.",
+  );
+  accountReady = true;
+} catch (error) {
+  syncMessage(error.message);
+  $("#sync-now").hidden = false;
+  $("#sync-now").textContent = "Retry connection";
+}
+$("#sync-now").onclick = () =>
+  accountReady ? refreshSync() : location.reload();
+$("#claim-local").onclick = async () => {
+  if (!sync.user || syncRunning) return;
+  const local = (await transaction("readonly", (s) => s.getAll())).filter(
+    (p) => isPurchase(p) && !purchases.some((c) => c.id === p.id),
+  );
+  if (
+    !local.length ||
+    !confirm(
+      `Add ${local.length} device purchases to your account? Text and dates will sync. Original files stay on this device. Existing account purchases will not be replaced.`,
+    )
+  )
+    return;
+  syncRunning = true;
+  $("#claim-local").disabled = true;
+  let count = 0;
+  try {
+    for (const p of local) {
+      await savePurchase(p, 0);
+      count++;
+      syncMessage(`Adding device purchases: ${count} of ${local.length}…`);
+    }
+    syncMessage(
+      `${count} purchases added to your account. Device copies are kept.`,
+    );
+  } catch (error) {
+    syncMessage(
+      `${count} added. ${error.message} All device copies are still kept.`,
+    );
+  } finally {
+    syncRunning = false;
+    $("#claim-local").disabled = false;
+    render();
+    await updateAccountUI();
+  }
+};
+if (accountUpdates) accountUpdates.onmessage = () => location.reload();
+setInterval(refreshSync, 15000);
+window.addEventListener("online", refreshSync);
+window.addEventListener("focus", refreshSync);
 if (updates)
   updates.onmessage = () => {
-    if (db) reload().catch(() => toast("Could not refresh saved purchases."));
+    if (db && !sync.user)
+      reload().catch(() => toast("Could not refresh saved purchases."));
   };
 let renderedDay = today();
 window.addEventListener("focus", () => {
@@ -841,10 +1003,10 @@ $("#ai-fill").onclick = async () => {
     "Reading the text and available receipt pages together with NVIDIA NIM… You can stop at any time.";
   $("#ai-evidence").replaceChildren();
   try {
-    const { getAuthConfig, accountToken } = await import("/auth-client.js");
+    const { getAuthConfig, getSession } = await import("/auth-client.js");
     const config = await getAuthConfig();
-    const token = config.aiRequiresLogin ? await accountToken() : null;
-    if (config.aiRequiresLogin && !token)
+    const session = config.aiRequiresLogin ? await getSession() : null;
+    if (config.aiRequiresLogin && !session?.user)
       throw new Error(
         "Sign in from Your account to use AI assistance. Local scanning still works.",
       );
@@ -853,7 +1015,6 @@ $("#ai-fill").onclick = async () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({
         text,

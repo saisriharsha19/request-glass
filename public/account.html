@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/account.js"></script>
   </head>
-  <body class="account-page">
+  <body class="account-page native-account">
     <header class="account-header">
       <a class="brand" href="/"
         ><span class="radar-logo" aria-hidden="true">↗</span> ReturnRadar</a
@@ -16,40 +16,142 @@
     </header>
     <main class="account-layout">
       <section class="account-intro">
-        <span class="eyebrow">A FAMILIAR FACE. EVERYWHERE.</span>
-        <h1>Your little corner.<br /><em>One account.</em></h1>
+        <span class="eyebrow">YOUR RADAR. WHEREVER YOU ARE.</span>
+        <h1>A little less<br /><em>“where did I put it?”</em></h1>
         <p>
-          Sign in with the same account on your phone and laptop. Your identity
-          travels with you.
+          One account for the things you’re keeping track of. Pick up on your
+          phone, carry on at your desk.
         </p>
         <div class="account-scope">
-          <strong>Your receipts still live on this device.</strong>
+          <strong>Details travel. Original files don’t.</strong>
           <p>
-            Purchase sync isn’t enabled yet. Signing in links your account; it
-            does not upload or move purchases. Anyone using this browser profile
-            can still see its local purchases.
+            Saved purchases and dates sync to your account. Uploaded PDFs and
+            photos are processed temporarily and aren’t stored in the database.
           </p>
         </div>
         <p class="account-transfer">
-          Moving to this site from our old address? Export a backup there, then
-          restore it from the purchases page here.
+          Already have purchases on this device? Sign in, then choose “Add
+          device purchases” on your dashboard. Switching from Google sign-in?
+          Create a ReturnRadar account once; your device purchases are still
+          here.
         </p>
       </section>
-      <section class="account-panel" aria-label="Sign in and account settings">
-        <h2 id="account-title">Make yourself at home.</h2>
-        <p id="account-status" role="status">Connecting to sign-in…</p>
-        <div id="sign-in"></div>
+      <section class="account-panel" aria-label="Your ReturnRadar account">
+        <div class="account-badge" aria-hidden="true">↗</div>
+        <h2 id="account-title">Welcome back.</h2>
+        <p id="account-status" role="status">Checking your account…</p>
+        <div id="auth-forms" hidden>
+          <div class="account-tabs" role="group" aria-label="Account action">
+            <button type="button" data-auth-mode="login" aria-pressed="true">
+              Sign in</button
+            ><button
+              type="button"
+              data-auth-mode="register"
+              aria-pressed="false"
+            >
+              Create account
+            </button>
+          </div>
+          <form id="account-form">
+            <label id="name-label" hidden
+              >Your name<input
+                id="account-display-name"
+                autocomplete="name"
+                maxlength="60"
+            /></label>
+            <label
+              >Username<input
+                id="account-username"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
+                minlength="3"
+                maxlength="40"
+                pattern="[a-zA-Z0-9][a-zA-Z0-9._\-]{2,39}"
+                required
+                placeholder="e.g. alex.radar"
+            /></label>
+            <label id="recovery-label" hidden
+              >Recovery key<input
+                id="account-recovery"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                maxlength="64"
+            /></label>
+            <label
+              ><span id="password-label">Password</span
+              ><span class="password-control"
+                ><input
+                  id="account-password"
+                  type="password"
+                  autocomplete="current-password"
+                  minlength="12"
+                  maxlength="128"
+                  required
+                /><button
+                  id="show-password"
+                  type="button"
+                  aria-label="Show password"
+                  aria-pressed="false"
+                >
+                  Show
+                </button></span
+              ></label
+            >
+            <p id="password-help" class="account-help" hidden>
+              At least 12 characters. A few memorable words work well.
+            </p>
+            <button id="account-submit" class="primary" type="submit">
+              Sign in ↗
+            </button>
+          </form>
+          <button
+            id="recover-account"
+            class="account-text-button"
+            type="button"
+          >
+            Forgot your password?
+          </button>
+          <p class="account-help">
+            No email provider or social-login service. Save your recovery key
+            when you create your account.
+          </p>
+        </div>
         <div id="account-details" hidden>
           <p id="account-name"></p>
-          <p class="account-id" id="account-id"></p>
-          <div id="user-button"></div>
-          <p>Open your profile button to manage your account or sign out.</p>
-          <a class="primary" href="/">Back to my purchases ↗</a>
+          <p id="account-id" class="account-id"></p>
+          <div class="sync-ready">
+            <span aria-hidden="true">✓</span> Your account is ready to sync.
+          </div>
+          <a class="primary account-dashboard-link" href="/"
+            >Go to my purchases ↗</a
+          ><button id="sign-out" class="secondary" type="button">
+            Sign out on this device
+          </button>
         </div>
-        <button id="account-retry" class="secondary" hidden>Try again</button>
-        <a class="guest-link" href="/"
-          >Continue on this device without signing in</a
+        <section
+          id="recovery-result"
+          hidden
+          aria-label="Save your recovery key"
         >
+          <h3>Keep your way back in.</h3>
+          <p>
+            This is your recovery key. Save it somewhere private; it replaces
+            email password resets and is shown only now.
+          </p>
+          <code id="recovery-key"></code
+          ><button id="download-recovery" class="secondary" type="button">
+            Download recovery key</button
+          ><label class="recovery-confirm"
+            ><input id="recovery-saved" type="checkbox" /> I’ve saved my
+            recovery key.</label
+          ><button id="recovery-done" class="primary" type="button" disabled>
+            Continue to my account ↗
+          </button>
+        </section>
+        <button id="account-retry" class="secondary" hidden>Try again</button>
+        <a class="guest-link" href="/">Continue with device-only purchases</a>
       </section>
     </main>
   </body>

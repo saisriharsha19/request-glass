@@ -1,10 +1,6 @@
 import { extractWithNim, validImages } from "./ai";
-import {
-  accountIdentity,
-  authConfig,
-  securityHeaders,
-  type AuthEnv,
-} from "./auth";
+import { accountIdentity, securityHeaders, type AuthEnv } from "./auth";
+import { accountApi, readBody } from "./account-api";
 export interface Env extends AuthEnv {
   ASSETS: { fetch(request: Request): Promise<Response> };
   NVIDIA_API_KEY?: string;
@@ -22,36 +18,6 @@ const json = (body: unknown, status = 200) =>
       "X-Content-Type-Options": "nosniff",
     },
   });
-// Bound streamed bodies as well as Content-Length; files never reach storage.
-export async function readBody(request: Request, maxBytes = 1500000) {
-  if (Number(request.headers.get("content-length")) > maxBytes)
-    throw new Error("too-large");
-  const reader = request.body?.getReader();
-  if (!reader) throw new Error("empty");
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > maxBytes) {
-        await reader.cancel();
-        throw new Error("too-large");
-      }
-      chunks.push(value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.length;
-  }
-  return JSON.parse(new TextDecoder().decode(bytes));
-}
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
@@ -64,24 +30,14 @@ export default {
     }
     if (url.pathname === "/healthz")
       return new Response("ok", { headers: securityHeaders(env) });
-    if (url.pathname === "/api/auth/config" && request.method === "GET")
-      return json({
-        auth: authConfig(env),
-        sync: "local-only",
-        aiRequiresLogin: true,
-      });
-    if (url.pathname === "/api/account" && request.method === "GET") {
-      const user = await accountIdentity(request, env);
-      return user
-        ? json({ user, sync: "local-only" })
-        : json({ error: "Sign in to view your account." }, 401);
-    }
+    const accountResponse = await accountApi(request, env);
+    if (accountResponse) return accountResponse;
     if (url.pathname === "/api/ai/extract" && request.method === "POST") {
       if (request.headers.get("origin") !== url.origin)
         return json({ error: "Open the app to use receipt assistance." }, 403);
       if (!request.headers.get("content-type")?.startsWith("application/json"))
         return json({ error: "Send receipt text as JSON." }, 415);
-      if (!authConfig(env) || !env.NVIDIA_API_KEY)
+      if (!env.DB || !env.NVIDIA_API_KEY)
         return json(
           {
             error:

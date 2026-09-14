@@ -1,68 +1,80 @@
-import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
-export type AuthEnv = { CLERK_PUBLISHABLE_KEY?: string };
-export function authConfig(env: AuthEnv) {
-  const key = env.CLERK_PUBLISHABLE_KEY || "";
-  if (!/^pk_(test|live)_[A-Za-z0-9+/=]+$/.test(key)) return null;
-  try {
-    const decoded = atob(key.split("_")[2]);
-    if (!decoded.endsWith("$")) return null;
-    const domain = decoded.slice(0, -1);
-    if (
-      !/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(domain) ||
-      !domain.includes(".")
-    )
-      return null;
-    return { publishableKey: key, domain, issuer: `https://${domain}` };
-  } catch {
-    return null;
-  }
+import { scrypt, timingSafeEqual } from "node:crypto";
+import type { AccountDatabase } from "./database";
+export interface AuthEnv {
+  DB?: AccountDatabase;
+  AI_REQUIRES_LOGIN?: boolean;
 }
-const keysets = new Map<string, JWTVerifyGetKey>();
+export const randomToken = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(32)), (x) =>
+    x.toString(16).padStart(2, "0"),
+  ).join("");
+export async function digest(value: string) {
+  return Array.from(
+    new Uint8Array(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)),
+    ),
+    (x) => x.toString(16).padStart(2, "0"),
+  ).join("");
+}
+// OWASP scrypt parameter set: 16 MiB, N=2^14, r=8, p=5. Native async crypto.
+export async function passwordHash(
+  password: string,
+  salt: string,
+): Promise<string> {
+  return new Promise((resolve, reject) =>
+    scrypt(
+      password,
+      salt,
+      32,
+      { N: 16384, r: 8, p: 5, maxmem: 32 * 1024 * 1024 },
+      (error, key) => (error ? reject(error) : resolve(key.toString("hex"))),
+    ),
+  );
+}
+export function equalHash(a: string, b: string) {
+  return (
+    /^[a-f0-9]{64}$/.test(a) &&
+    /^[a-f0-9]{64}$/.test(b) &&
+    timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"))
+  );
+}
+export const isLocal = (request: Request) =>
+  ["localhost", "127.0.0.1", "[::1]"].includes(new URL(request.url).hostname);
+export const cookieName = (request: Request) =>
+  isLocal(request) ? "rr_session" : "__Host-rr_session";
+export function sessionCookie(
+  request: Request,
+  value: string,
+  maxAge = 30 * 86400,
+) {
+  return `${cookieName(request)}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${isLocal(request) ? "" : "; Secure"}`;
+}
+export function sessionToken(request: Request) {
+  return (
+    request.headers
+      .get("cookie")
+      ?.split(";")
+      .map((s) => s.trim())
+      .find((s) => s.startsWith(`${cookieName(request)}=`))
+      ?.split("=")[1] || ""
+  );
+}
 export async function accountIdentity(
   request: Request,
   env: AuthEnv,
-  resolver?: JWTVerifyGetKey,
-) {
-  const config = authConfig(env);
-  const token = request.headers
-    .get("authorization")
-    ?.match(/^Bearer ([^ ]+)$/)?.[1];
-  if (!config || !token || token.length > 12000) return null;
-  try {
-    let keys = resolver || keysets.get(config.issuer);
-    if (!keys) {
-      keys = createRemoteJWKSet(
-        new URL(`${config.issuer}/.well-known/jwks.json`),
-        { timeoutDuration: 5000 },
-      );
-      keysets.set(config.issuer, keys);
-    }
-    const { payload } = await jwtVerify(token, keys, {
-      issuer: config.issuer,
-      algorithms: ["RS256"],
-      requiredClaims: ["sub", "exp", "iat", "nbf", "sid", "azp"],
-    });
-    if (
-      payload.azp !== new URL(request.url).origin ||
-      typeof payload.sub !== "string" ||
-      !payload.sub.startsWith("user_") ||
-      typeof payload.sid !== "string" ||
-      payload.sts === "pending"
-    )
-      return null;
-    return { id: payload.sub };
-  } catch {
-    return null;
-  }
+): Promise<{ id: string; username: string; name: string } | null> {
+  const token = sessionToken(request);
+  if (!env.DB || !/^[a-f0-9]{64}$/.test(token)) return null;
+  return env.DB.prepare(
+    "SELECT a.id, a.username, a.name FROM accounts a JOIN sessions s ON a.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?",
+  )
+    .bind(await digest(token), Date.now())
+    .first();
 }
-export function securityHeaders(env: AuthEnv) {
-  const config = authConfig(env);
-  const host = config?.issuer || "";
-  const authScripts = config
-    ? ` ${host} https://challenges.cloudflare.com https://*.protect.clerk.com`
-    : "";
+export function securityHeaders(_env?: unknown) {
   return {
-    "Content-Security-Policy": `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'${authScripts}; style-src 'self'${config ? " 'unsafe-inline'" : ""}; img-src 'self' data: blob:${config ? " https://img.clerk.com" : ""}; connect-src 'self'${config ? ` ${host} https://*.protect.clerk.com` : ""}; frame-src 'self'${config ? " https://challenges.cloudflare.com https://*.protect.clerk.com" : ""}; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`,
+    "Content-Security-Policy":
+      "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'none'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
     "Strict-Transport-Security": "max-age=31536000",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
