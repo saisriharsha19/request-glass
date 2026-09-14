@@ -1028,7 +1028,7 @@ async function prepareVisionSheet(images) {
 // Delight is event-driven: no animation loops, scroll tracking, or saved state.
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const playfulAnimations = new WeakMap();
-function wiggle(node, frames, duration = 500) {
+function wiggle(node, frames, duration = 240) {
   playfulAnimations.get(node)?.cancel();
   if (reducedMotion.matches) return;
   const animation = node.animate(frames, { duration, easing: "ease-out" });
@@ -1046,8 +1046,8 @@ $("#radar-buddy").addEventListener("click", () => {
   greetings++;
   wiggle($("#radar-buddy"), [
     { transform: "rotate(-9deg)" },
-    { transform: "translateY(-12px) rotate(12deg)", offset: 0.35 },
-    { transform: "rotate(-18deg)", offset: 0.7 },
+    { transform: "rotate(-5deg)", offset: 0.35 },
+    { transform: "rotate(-11deg)", offset: 0.7 },
     { transform: "rotate(-9deg)" },
   ]);
   if (greetings % buddyMessages.length === 0) celebrate();
@@ -1063,14 +1063,7 @@ let noteIndex = 0;
 $("#note-shuffle").addEventListener("click", () => {
   const note = $("#future-note");
   note.textContent = futureNotes[noteIndex++ % futureNotes.length];
-  wiggle(
-    note,
-    [
-      { opacity: 0, transform: "translateY(6px)" },
-      { opacity: 1, transform: "translateY(0)" },
-    ],
-    220,
-  );
+  wiggle(note, [{ opacity: 0 }, { opacity: 1 }], 220);
 });
 $("#future-note").setAttribute("aria-live", "polite");
 $("#little-secret").addEventListener("click", () => {
