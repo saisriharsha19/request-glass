@@ -2,19 +2,8 @@ import { extractWithNim, validImages } from "./ai";
 const host =
   process.env.HOST ?? (process.env.RENDER === "true" ? "0.0.0.0" : "127.0.0.1");
 const port = Number(process.env.PORT ?? 3000);
-const assets: Record<string, string> = {
-  "/": "public/index.html",
-  "/app.js": "public/app.js",
-  "/logic.js": "public/logic.js",
-  "/pdf.js": "public/pdf.js",
-  "/pdf/pdf.min.mjs": "node_modules/pdfjs-dist/build/pdf.min.mjs",
-  "/pdf/pdf.worker.min.mjs": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
-  "/style.css": "public/style.css",
-  "/ocr/tesseract.min.js": "node_modules/tesseract.js/dist/tesseract.min.js",
-  "/ocr/worker.min.js": "node_modules/tesseract.js/dist/worker.min.js",
-  "/ocr/eng.traineddata.gz":
-    "node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz",
-};
+import { assets } from "./assets";
+import { authConfig, accountIdentity, securityHeaders } from "./auth";
 let aiWindow = Date.now(),
   aiCalls = 0,
   aiInFlight = 0;
@@ -38,12 +27,24 @@ Bun.serve({
   port,
   async fetch(request) {
     const path = new URL(request.url).pathname;
-    const headers = {
-      "Content-Security-Policy":
-        "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
-      "X-Content-Type-Options": "nosniff",
-      "Referrer-Policy": "no-referrer",
-    };
+    const headers = securityHeaders({
+      CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
+    });
+    if (path === "/api/auth/config" && request.method === "GET")
+      return json({
+        auth: authConfig({
+          CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
+        }),
+        sync: "local-only",
+      });
+    if (path === "/api/account" && request.method === "GET") {
+      const user = await accountIdentity(request, {
+        CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
+      });
+      return user
+        ? json({ user, sync: "local-only" })
+        : json({ error: "Sign in to view your account." }, 401);
+    }
     if (path === "/api/ai/extract" && request.method === "POST") {
       const origin = request.headers.get("origin");
       if (

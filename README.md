@@ -32,7 +32,7 @@ Images: PNG/JPEG/WebP up to 8 MB and 24 megapixels. PDFs: up to 10 MB / 10 pages
 
 NVIDIA processes submitted material under its own service terms; the app cannot guarantee deletion from NVIDIA systems. Receipts saved by the previous version remain available and are migrated without loss. Newly uploaded replacements follow the temporary-file behavior. Backups can contain legacy receipt images, so keep them private.
 
-Clearing browser storage removes saved purchases. There is no account or cross-device sync. Export/restore JSON backups supports up to 50 MB / 2,000 purchases. Restoring replaces matching IDs and preserves other purchases.
+Clearing browser storage removes saved purchases. Optional Clerk sign-in links your identity across devices; purchases are not synced or uploaded. Export/restore JSON backups supports up to 50 MB / 2,000 purchases. Restoring replaces matching IDs and preserves other purchases.
 
 ## NVIDIA NIM configuration
 
@@ -68,3 +68,7 @@ Search, sort, archive/restore, and the upcoming-deadline timeline operate locall
 The Dockerfile installs locked production dependencies, including local OCR/PDF assets. `/healthz` is the health endpoint. The existing Render service retains its name; do not apply the blueprint as a new service unless a second service is intended. Previous request-inspector capture/admin routes are removed.
 
 Tests cover storage/migration, receipt/PDF extraction, no new file persistence, one image upload followed by text-only inference, manual-edit precedence, conflicting date evidence, provider errors, backups, safe text rendering, calendar files, mobile layout, lazy loading, settled animations, and a 500-record collection. Mocked tests are distinct from live model and deployment checks.
+
+## Account linkage and Cloudflare migration
+
+The Cloudflare deployment target and account setup are documented in [docs/cloudflare-launch.md](docs/cloudflare-launch.md). The new hosting address is https://return-radar.return-radar.workers.dev. Production login still requires Clerk configuration. The account page supports Clerk sign-in/profile/sign-out; purchase data stays in the browser. The Cloudflare AI endpoint requires a verified account. No D1 database is provisioned yet.

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f3ee" />
+    <title>Your account — ReturnRadar</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/account.js"></script>
+  </head>
+  <body class="account-page">
+    <header class="account-header">
+      <a class="brand" href="/"
+        ><span class="radar-logo" aria-hidden="true">↗</span> ReturnRadar</a
+      ><a class="back-link" href="/">← Your purchases</a>
+    </header>
+    <main class="account-layout">
+      <section class="account-intro">
+        <span class="eyebrow">A FAMILIAR FACE. EVERYWHERE.</span>
+        <h1>Your little corner.<br /><em>One account.</em></h1>
+        <p>
+          Sign in with the same account on your phone and laptop. Your identity
+          travels with you.
+        </p>
+        <div class="account-scope">
+          <strong>Your receipts still live on this device.</strong>
+          <p>
+            Purchase sync isn’t enabled yet. Signing in links your account; it
+            does not upload or move purchases. Anyone using this browser profile
+            can still see its local purchases.
+          </p>
+        </div>
+        <p class="account-transfer">
+          Moving to this site from our old address? Export a backup there, then
+          restore it from the purchases page here.
+        </p>
+      </section>
+      <section class="account-panel" aria-label="Sign in and account settings">
+        <h2 id="account-title">Make yourself at home.</h2>
+        <p id="account-status" role="status">Connecting to sign-in…</p>
+        <div id="sign-in"></div>
+        <div id="account-details" hidden>
+          <p id="account-name"></p>
+          <p class="account-id" id="account-id"></p>
+          <div id="user-button"></div>
+          <p>Open your profile button to manage your account or sign out.</p>
+          <a class="primary" href="/">Back to my purchases ↗</a>
+        </div>
+        <button id="account-retry" class="secondary" hidden>Try again</button>
+        <a class="guest-link" href="/"
+          >Continue on this device without signing in</a
+        >
+      </section>
+    </main>
+  </body>
+</html>

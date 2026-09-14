@@ -3,3 +3,9 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Generated Cloudflare files and local development secrets
+dist-cloudflare/
+.wrangler/
+.dev.vars
+.dev.vars.*

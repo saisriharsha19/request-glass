@@ -841,9 +841,20 @@ $("#ai-fill").onclick = async () => {
     "Reading the text and available receipt pages together with NVIDIA NIM… You can stop at any time.";
   $("#ai-evidence").replaceChildren();
   try {
+    const { getAuthConfig, accountToken } = await import("/auth-client.js");
+    const config = await getAuthConfig();
+    const token = config.aiRequiresLogin ? await accountToken() : null;
+    if (config.aiRequiresLogin && !token)
+      throw new Error(
+        "Sign in from Your account to use AI assistance. Local scanning still works.",
+      );
+    if (run !== ocrRun) return;
     const response = await fetch("/api/ai/extract", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         text,
         images: await prepareVisionSheet(visionImages),
