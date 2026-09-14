@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f8fc" />
+    <meta
+      name="description"
+      content="Turn receipts into reminders. Keep return, cancellation, and warranty dates in one private place."
+    />
+    <title>ReturnRadar — A little backup for your purchases</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/ocr/tesseract.min.js" defer></script>
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a href="/" class="brand"
+          ><span class="radar-logo">◉</span> Return<span>Radar</span></a
+        >
+        <div class="workspace-label">YOUR PERSONAL SAFETY NET</div>
+        <nav aria-label="Purchases">
+          <button class="nav-item selected" data-view="all">
+            <span>▦</span> Overview <b id="nav-count">0</b></button
+          ><button class="nav-item" data-view="soon">
+            <span>◷</span> Coming up</button
+          ><button class="nav-item" data-view="archived">
+            <span>▤</span> Archived
+          </button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="local-badge">
+            <span class="green-dot"></span> On your device. In your control.
+          </div>
+          <p>
+            Your receipts stay in this browser.<br />No account. No inbox
+            access.
+          </p>
+          <button id="export" class="sidebar-link">↓ Export backup</button
+          ><label class="sidebar-link import-label" role="button" tabindex="0"
+            >↑ Restore backup<input
+              type="file"
+              id="import"
+              accept="application/json,.json"
+              hidden
+          /></label>
+        </div>
+      </aside>
+      <div class="page">
+        <header>
+          <div class="breadcrumb">
+            Your space <span>/</span> <strong id="view-name">Overview</strong>
+          </div>
+          <span class="private-pill">⌁ &nbsp; Private by default</span>
+        </header>
+        <main>
+          <section class="intro">
+            <div>
+              <div class="eyebrow hero-kicker">
+                <span></span> YOUR PURCHASES HAVE A PLOT TWIST.
+              </div>
+              <h1>
+                Buy the thing.<br /><em>Keep the possibilities.</em
+                ><span class="title-spark" aria-hidden="true">✳</span>
+              </h1>
+              <p>
+                Receipts become reminders. The important dates don’t slip away.
+              </p>
+            </div>
+            <div class="intro-actions">
+              <button class="primary" id="new-purchase">
+                <span>＋</span> Add a purchase</button
+              ><span class="hand-note">a tiny favor for future you ↗</span>
+            </div>
+            <div class="hero-scene" aria-hidden="true">
+              <div class="orbit orbit-one"></div>
+              <div class="orbit orbit-two"></div>
+              <div class="scene-spark">✦</div>
+              <div class="floating-receipt">
+                <div class="receipt-brand">SOMETHING GOOD™</div>
+                <div class="receipt-dashes"></div>
+                <div class="receipt-line">One excellent purchase <b>✓</b></div>
+                <div class="receipt-line">A little peace of mind <b>✓</b></div>
+                <div class="receipt-dashes"></div>
+                <div class="receipt-total">REGRETS <b>$0.00</b></div>
+                <div class="barcode"></div>
+                <span>THANK YOU, PAST ME.</span>
+              </div>
+              <div class="radar-buddy">
+                <div class="buddy-eye"></div>
+                <div class="buddy-eye"></div>
+                <div class="buddy-smile"></div>
+              </div>
+              <div class="deadline-sticker">↗ OPTIONS: STILL OPEN</div>
+              <span class="scene-mini-spark">✳</span>
+            </div>
+          </section>
+          <div id="storage-warning" class="warning" hidden>
+            Browser storage is unavailable. Your changes cannot be saved. Enable
+            storage, then reload.
+          </div>
+          <section class="stats" aria-label="Purchase overview">
+            <div class="stat">
+              <span class="stat-icon violet">▣</span>
+              <div>
+                <span class="stat-label">Purchases on your radar</span
+                ><strong id="purchase-count">0</strong
+                ><small>Everything, in one place</small>
+              </div>
+            </div>
+            <div class="stat">
+              <span class="stat-icon amber">◷</span>
+              <div>
+                <span class="stat-label">Deadlines in 7 days</span
+                ><strong id="deadline-count">0</strong
+                ><small>A little heads-up goes a long way</small>
+              </div>
+            </div>
+            <div class="stat">
+              <span class="stat-icon mint">✓</span>
+              <div>
+                <span class="stat-label">Receipts safely filed</span
+                ><strong id="receipt-count">0</strong
+                ><small>Saved on this device</small>
+              </div>
+            </div>
+          </section>
+          <div class="content-grid">
+            <section class="purchase-section">
+              <div class="section-heading">
+                <h2 id="list-title">
+                  Your purchases <span id="list-count">0</span>
+                </h2>
+                <label class="search-wrap"
+                  ><span>⌕</span
+                  ><input
+                    id="search"
+                    type="search"
+                    placeholder="Find a purchase…"
+                    aria-label="Search purchases"
+                /></label>
+              </div>
+              <div
+                class="filter-row"
+                role="group"
+                aria-label="Filter by deadline"
+              >
+                <button data-filter="all" class="active">All purchases</button
+                ><button data-filter="return">Returns</button
+                ><button data-filter="cancel">Cancellations</button
+                ><button data-filter="warranty">Warranties</button>
+              </div>
+              <div id="purchase-list"></div>
+            </section>
+            <aside class="right-column">
+              <section class="calendar-card">
+                <div class="mini-icon">◷</div>
+                <span class="eyebrow">LET YOUR CALENDAR REMEMBER</span>
+                <h2>Your next deadline,<br />already on your mind?</h2>
+                <p>
+                  Add your saved dates to Apple, Google, or Outlook Calendar.
+                  Give future you a heads-up.
+                </p>
+                <button id="calendar-all" class="secondary">
+                  ↓ Export all reminders</button
+                ><small>Calendar file · Reminders 3 days before</small>
+              </section>
+              <section class="how-card">
+                <h3>A receipt. A little peace of mind.</h3>
+                <div>
+                  <b>1</b>
+                  <p>
+                    <strong>Drop it in</strong
+                    ><span>Paste an order or add a receipt photo.</span>
+                  </p>
+                </div>
+                <div>
+                  <b>2</b>
+                  <p>
+                    <strong>Give it a quick look</strong
+                    ><span>Review details and confirm the dates.</span>
+                  </p>
+                </div>
+                <div>
+                  <b>3</b>
+                  <p>
+                    <strong>Keep your options open</strong
+                    ><span>Save it and add calendar reminders.</span>
+                  </p>
+                </div>
+              </section>
+              <p class="fine-print">
+                No guessed store policies. No made-up savings.<br />Just your
+                purchases and the dates you confirm.
+              </p>
+            </aside>
+          </div>
+          <footer>
+            <span>Less “I wish I’d remembered.” More peace of mind.</span
+            ><span>Made for the everyday stuff. ✧</span>
+          </footer>
+        </main>
+      </div>
+    </div>
+    <dialog id="purchase-dialog">
+      <form id="purchase-form">
+        <div class="modal-header">
+          <div>
+            <div class="eyebrow">A LITTLE FUTURE-PROOFING</div>
+            <h2 id="dialog-title">Add a purchase</h2>
+          </div>
+          <button
+            type="button"
+            id="close-dialog"
+            class="icon-button"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+        <section class="capture-section">
+          <label for="receipt-text">Paste a receipt or order confirmation</label
+          ><textarea
+            id="receipt-text"
+            maxlength="50000"
+            rows="4"
+            placeholder="Store name, item, total, and any return or cancellation dates…"
+          ></textarea>
+          <div class="capture-actions">
+            <label class="upload-button" role="button" tabindex="0"
+              >↑ Add receipt image<input
+                id="receipt-file"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                hidden /></label
+            ><button type="button" id="extract" class="secondary">
+              Find the details ✧
+            </button>
+          </div>
+          <p id="ocr-status" class="small" role="status">
+            English image text is read on your device. PNG, JPG or WebP, up to 8
+            MB.
+          </p>
+          <div id="receipt-preview"></div>
+        </section>
+        <div class="review-note">
+          Review before saving. Text recognition can make mistakes. Only
+          explicitly dated return, cancellation, and warranty terms are
+          extracted; add other dates yourself.
+        </div>
+        <div class="form-grid">
+          <label class="wide"
+            >What did you buy?<input
+              id="item"
+              maxlength="180"
+              required
+              placeholder="e.g. Noise-cancelling headphones" /></label
+          ><label
+            >Store or service<input
+              id="merchant"
+              maxlength="100"
+              placeholder="e.g. The Audio Store" /></label
+          ><label>Purchase date<input id="purchased" type="date" /></label
+          ><label
+            >Amount paid<input
+              id="amount"
+              type="number"
+              min="0"
+              max="999999999"
+              step="0.01"
+              placeholder="0.00" /></label
+          ><label
+            >Currency<select id="currency">
+              <option>USD</option>
+              <option>EUR</option>
+              <option>GBP</option>
+              <option>INR</option>
+              <option>CAD</option>
+              <option>AUD</option>
+              <option>JPY</option>
+            </select></label
+          ><label>Return deadline<input id="return" type="date" /></label
+          ><label
+            >Cancel / trial deadline<input id="cancel" type="date" /></label
+          ><label>Warranty ends<input id="warranty" type="date" /></label
+          ><label>Price check reminder<input id="price" type="date" /></label
+          ><label class="wide"
+            >Notes / policy details<textarea
+              id="notes"
+              rows="2"
+              maxlength="3000"
+              placeholder="Anything future you should know…"
+            ></textarea>
+          </label>
+        </div>
+        <p class="small muted">
+          Leave unknown dates blank. A price check is your own reminder; this
+          app does not monitor prices. Calendar alerts require importing the
+          calendar file.
+        </p>
+        <div class="modal-footer">
+          <button id="delete" class="danger" type="button" hidden>
+            Delete purchase</button
+          ><button type="button" id="cancel-dialog" class="secondary">
+            Cancel</button
+          ><button type="submit" class="primary" id="save">
+            Save purchase →
+          </button>
+        </div>
+        <p id="form-error" class="error" role="alert"></p>
+      </form>
+    </dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

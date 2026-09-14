@@ -1,38 +1,46 @@
-# Request Glass
+# ReturnRadar
 
-A dependency-free Bun server for inspecting HTTP requests in real time. It keeps only the latest requests in memory. Credentials are redacted by default, or can be shown for a loopback-only local session.
+A playful, private place to turn receipts into purchase reminders. Built with Bun and a responsive browser UI, without a server database or account.
+
+## What works
+
+- Paste an order confirmation, add a purchase manually, or read an English receipt image using Tesseract.js on your device.
+- Review and edit extracted product, merchant, total, purchase date, and explicit return/cancellation/warranty dates.
+- Store original text, receipt images, notes, and dates in IndexedDB.
+- Search purchases, filter by deadline type, see dates coming up within seven days, and archive/restore purchases.
+- Export upcoming dates as an `.ics` file for importing into Apple, Google, or Outlook Calendar. Events include a three-day reminder; calendar client settings govern notification behavior. For deadlines fewer than three days away, set an additional alert.
+- Export and restore JSON backups, including receipt images. Restoring replaces matching purchase IDs and preserves other purchases.
 
 ## Run
 
-```bash
+```sh
+bun install --frozen-lockfile
 bun run start
 ```
 
-To show complete sensitive values locally:
+Open http://127.0.0.1:3000. `HOST` and `PORT` control the listener. A production deployment must use HTTPS so browser features such as secure UUID generation are available.
 
-```bash
-SHOW_SECRETS=1 bun run start
+## Checks
+
+```sh
+bun run check
+bun test
+bunx playwright install chromium
+bun run test:browser
 ```
 
-Open <http://127.0.0.1:3000>, then send requests to any non-`/api/*` path:
+Browser checks cover image OCR, purchase persistence, editing, literal rendering of HTML-like input, search, calendar download, archive/restore, backups, and mobile layout.
 
-```bash
-curl http://127.0.0.1:3000/debug/example?source=local \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer example-secret' \
-  -d '{"message":"hello","password":"also-secret"}'
-```
+## Boundaries
 
-Requests are not written to disk. The server binds to `127.0.0.1` unless `HOST` is explicitly changed. If sensitive values are visible on a public host, always enable `PUBLIC_MODE` with separate high-entropy capture and dashboard tokens.
+The app never invents merchant policies. The conservative parser recognizes labeled fields, ISO dates, and English month-name dates with explicit years. Relative periods and ambiguous numeric dates remain blank for manual review. OCR can be wrong; users must review extracted details. OCR supports PNG, JPEG, and WebP up to 8 MB and 24 megapixels, in English. PDFs are not supported. The image, OCR engine, and English language model are processed/served locally without sending receipt content to an outside service. [Tesseract local installation documentation](https://github.com/naptha/tesseract.js/blob/master/docs/local-installation.md) describes the worker/core/language configuration.
 
-## Deploy on Render
+Data lives only in this browser and origin; it does not sync across devices. Clearing browser data removes it. Keep exported backups private. Backup import accepts up to 50 MB and 2,000 purchases. Sample data is explicitly labeled and only becomes a saved purchase if the user saves it.
 
-The included `render.yaml` and `Dockerfile` define a free Render web service. During service creation, provide different random values of at least 32 characters for `CAPTURE_TOKEN` and `ADMIN_TOKEN`.
+Calendar files must be imported to receive reminders. There are no automatic price checks, email integrations, background notifications, or claimed savings. A price-check date is a user-selected calendar reminder. This version is not an offline PWA.
 
-Hosted mode exposes only these paths:
+## Render / Docker
 
-- `/capture/<CAPTURE_TOKEN>/<optional-path>` accepts captured requests.
-- `/admin/<ADMIN_TOKEN>` opens the dashboard.
-- `/healthz` is a metadata-free health check.
+The Dockerfile installs locked production dependencies, including OCR assets, and serves the UI at `/`. `/healthz` is the health endpoint. The blueprint describes a new `return-radar` service; an existing Render service can keep its name and use this Dockerfile. Avoid applying the blueprint as a new service unless a second service is intended.
 
-All other paths return `404`. Captures remain in memory and disappear whenever the free instance sleeps or restarts.
+Previous request-inspector capture/admin routes have been removed. Old inspector environment variables are ignored; only `HOST` and `PORT` are used. No receipt data is accepted or stored by the server.

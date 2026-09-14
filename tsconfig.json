@@ -5,6 +5,13 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
-    "types": ["bun-types"]
-  }
+    "types": ["bun-types"],
+    "allowJs": true
+  },
+  "include": [
+    "server.ts",
+    "playwright.config.ts",
+    "tests/**/*.ts",
+    "public/logic.js"
+  ]
 }

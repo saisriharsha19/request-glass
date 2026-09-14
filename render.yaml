@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: request-glass
+    name: return-radar
     runtime: docker
     plan: free
     healthCheckPath: /healthz
@@ -8,19 +8,3 @@ services:
     envVars:
       - key: HOST
         value: 0.0.0.0
-      - key: SHOW_SECRETS
-        value: "1"
-      - key: PUBLIC_MODE
-        value: "1"
-      - key: CAPTURE_TOKEN
-        sync: false
-      - key: ADMIN_TOKEN
-        sync: false
-      - key: LOG_REQUESTS
-        value: "0"
-      - key: MAX_EVENTS
-        value: "250"
-      - key: MAX_BODY_BYTES
-        value: "1048576"
-      - key: MAX_REQUESTS_PER_MINUTE
-        value: "120"

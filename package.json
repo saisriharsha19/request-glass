@@ -1,14 +1,21 @@
 {
-  "name": "bun-request-inspector",
+  "name": "return-radar",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "bun run server.ts",
     "dev": "bun --watch server.ts",
-    "check": "bunx tsc --noEmit"
+    "check": "bunx tsc --noEmit",
+    "test": "bun test",
+    "test:browser": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/bun": "latest",
     "typescript": "latest"
+  },
+  "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "tesseract.js": "^7.0.0"
   }
 }
