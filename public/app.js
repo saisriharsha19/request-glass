@@ -56,6 +56,7 @@ let finishAccountLoad;
 const accountLoaded = new Promise((resolve) => {
   finishAccountLoad = resolve;
 });
+let lastSyncAttempt = Date.now();
 let accountReady = false,
   editingVersion = 0,
   draftId = "",
@@ -126,6 +127,7 @@ async function refreshSync({ force = false, session = false } = {}) {
     return;
   }
   syncRunning = true;
+  lastSyncAttempt = Date.now();
   $("#sync-now").disabled = true;
   $("#sync-now").textContent = "Checking…";
   $("#header-sync").setAttribute("aria-busy", "true");
@@ -1151,6 +1153,7 @@ function selectWorkspace(selected) {
   document.title=`${selected==='planner'?'Calendar':selected==='insights'?'Insights':'Records'} — Tuckday`;
   for(const button of document.querySelectorAll('[data-workspace]')){if(button.dataset.workspace===selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');}
   planner?.render();
+  window.dispatchEvent(new Event('tuckday-workspace-changed'));
   if(viewReady&&changed&&!applyingView){saveView(true);cancelAnimationFrame(restoreFrame);restoreFrame=requestAnimationFrame(()=>scrollTo({top:savedScroll[selected]||0,behavior:'instant'}));}
 }
 for (const button of document.querySelectorAll("[data-workspace]")) {
@@ -1238,6 +1241,7 @@ try {
   $("#sync-now").hidden = false;
   $("#sync-now").textContent = "Retry connection";
 } finally {
+  lastSyncAttempt = Date.now();
   finishAccountLoad();
 }
 $("#sync-now").onclick = () => refreshSync({ force: true, session: true });
@@ -1278,13 +1282,38 @@ $("#claim-local").onclick = async () => {
 };
 if (accountUpdates)
   accountUpdates.onmessage = () => refreshSync({ force: true, session: true });
-setInterval(() => refreshSync(), 15000);
-const resumeSync = () => refreshSync({ force: true, session: true });
+let autoSyncTimer;
+const resumeSync = () => {
+  clearTimeout(autoSyncTimer);
+  const remaining = 5 * 60 * 1000 - (Date.now() - lastSyncAttempt);
+  if (remaining <= 0 && viewReady && activeWorkspace === 'items' && !document.hidden && navigator.onLine && sync.user) {
+    void refreshSync({ session: true });
+  }
+  autoSyncTimer = setTimeout(resumeSync, remaining > 0 ? remaining : 5 * 60 * 1000);
+};
+autoSyncTimer = setTimeout(resumeSync, 5 * 60 * 1000);
+window.addEventListener('tuckday-workspace-changed', resumeSync);
 window.addEventListener("online", resumeSync);
-window.addEventListener("focus", resumeSync);
-window.addEventListener("pageshow", resumeSync);
+// Account identity is rechecked on return even between data polls, so a changed
+// browser session cannot leave another account's records on screen.
+let identityCheck = null;
+const verifyResumedAccount = () => {
+  if (document.hidden || !navigator.onLine || !accountReady || syncRunning || identityCheck || $('#purchase-dialog').open) { resumeSync(); return; }
+  identityCheck = (async () => {
+    try {
+      if (await sync.refreshSession()) {
+        loadSequence++; purchases=[]; render();
+        await updateAccountUI();
+        await refreshSync({ force:true });
+      } else resumeSync();
+    } catch (error) { syncMessage(error.message); }
+    finally { identityCheck=null; }
+  })();
+};
+window.addEventListener("focus", verifyResumedAccount);
+window.addEventListener("pageshow", verifyResumedAccount);
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) resumeSync();
+  if (!document.hidden) verifyResumedAccount();
 });
 window.addEventListener("offline", () =>
   syncMessage(

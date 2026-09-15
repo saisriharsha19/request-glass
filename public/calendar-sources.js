@@ -1,9 +1,10 @@
 import {api} from '/auth-client.js';
+let lastAttempt = 0;
 let owner = null, sources = [], running = false, generation = 0, pending = false, mutation = null;
 let events=[], range='', next=null, eventBusy=false, eventError='', eventGeneration=0, snapshot='';
 export function calendarPage(){return {next,busy:eventBusy,error:eventError};}
 export function setCalendarRange(from,to){const value=`from=${from}&to=${to}`;if(value===range)return;range=value;resetEvents();}
-function resetEvents(){eventGeneration++;events=[];next=null;eventBusy=false;eventError='';if(range&&owner)void loadCalendarPage();}
+function resetEvents(){eventGeneration++;events=[];next=null;eventBusy=false;eventError='';if(range&&owner&&sources.length)void loadCalendarPage();}
 export async function loadCalendarPage(){
  if(eventBusy||!owner||!range)return;
  const current=eventGeneration, account=owner;eventBusy=true;eventError='';
@@ -47,6 +48,7 @@ async function load(method='GET',path='',data) {
   if(running){if(method === "GET")pending=true;else mutation={method,path,data,generation};return;}
   const current = generation;
   running=true;
+  lastAttempt=Date.now();
   $('#incoming-status').textContent=method==='GET'?'Loading connected calendars…':'Updating calendars…';
   for(const button of document.querySelectorAll('#incoming-calendar-dialog button:not([data-close])'))button.disabled=true;
   try {
@@ -74,10 +76,22 @@ $('#incoming-close').onclick=()=>$('#incoming-calendar-dialog').close();
 $('#incoming-refresh').onclick=()=>load('POST','/refresh');
 $('#incoming-form').onsubmit=event=>{event.preventDefault();void load('POST','',{name:$('#incoming-name').value,url:$('#incoming-url').value});};
 $('#calendar-share').onclick=()=>{$('#incoming-calendar-dialog').close();window.dispatchEvent(new Event('tuckday-share-calendar'));};
-void load();
-setInterval(()=>{if(!document.hidden && !$('#incoming-calendar-dialog').open)void load();},60000);
-window.addEventListener('focus',()=>{if(!$('#incoming-calendar-dialog').open)void load();});
-window.addEventListener('tuckday-account-changed',event=>{if(owner===event.detail?.userId)return;generation++;if(owner)$('#incoming-form').reset();owner=null;sources=[];snapshot="";resetEvents();renderSources();notify();void load();});
-window.addEventListener('online',()=>void load());
-window.addEventListener('pageshow',()=>void load());
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)void load();});
+let autoLoadTimer;
+function autoLoad() {
+  clearTimeout(autoLoadTimer);
+  const remaining = 5 * 60 * 1000 - (Date.now() - lastAttempt);
+  if (remaining <= 0 && owner && !document.hidden && navigator.onLine && document.body.dataset.surface === 'planner' && !$('#incoming-calendar-dialog').open) void load();
+  autoLoadTimer = setTimeout(autoLoad, remaining > 0 ? remaining : 5 * 60 * 1000);
+}
+autoLoadTimer = setTimeout(autoLoad, 5 * 60 * 1000);
+window.addEventListener('focus',autoLoad);
+window.addEventListener('tuckday-workspace-changed',autoLoad);
+window.addEventListener('tuckday-account-changed',event=>{
+ const nextOwner=event.detail?.userId || null;
+ if(owner===nextOwner)return;
+ generation++;if(owner)$('#incoming-form').reset();owner=nextOwner;sources=[];snapshot="";lastAttempt=0;
+ resetEvents();renderSources();notify();autoLoad();
+});
+window.addEventListener('online',autoLoad);
+window.addEventListener('pageshow',autoLoad);
+document.addEventListener('visibilitychange',autoLoad);

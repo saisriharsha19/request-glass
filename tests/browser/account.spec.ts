@@ -127,7 +127,7 @@ test("mobile account fields stay fixed while typing and failed cloud saves retai
   await expect(page.locator("#purchase-count")).toHaveText("1");
 });
 
-test("mobile resume refreshes the same account without pressing Sync now", async ({
+test("mobile resume refreshes after the five minute interval without pressing Sync now", async ({
   page,
   browser,
 }) => {
@@ -144,6 +144,8 @@ test("mobile resume refreshes the same account without pressing Sync now", async
     await page.locator("#item").fill("Appears when phone resumes");
     await page.locator("#save").click();
     await expect(page.locator("#purchase-count")).toHaveText("1");
+    await phone.clock.install();
+    await phone.clock.setSystemTime(new Date(Date.now()+300001));
     await phone.evaluate(() =>
       document.dispatchEvent(new Event("visibilitychange")),
     );
@@ -154,6 +156,7 @@ test("mobile resume refreshes the same account without pressing Sync now", async
     await expect(phone.locator("#sync-message")).toContainText("1 record confirmed on server");
     await phone.getByRole("button", { name: "View / edit" }).click();
     await phone.locator("#notes").fill("Keep my typing");
+    await phone.clock.setSystemTime(new Date(Date.now()+600002));
     await phone.evaluate(() => window.dispatchEvent(new Event("online")));
     await expect(phone.locator("#notes")).toHaveValue("Keep my typing");
     await expect(phone.locator("#sync-message")).toContainText("draft is safe");
@@ -264,6 +267,8 @@ test('server keeps a save after the writing device closes and the receiving devi
   await page.locator('#save').click();
   await expect(page.locator('.purchase-card')).toContainText('Saved while phone offline');
   await page.close();
+  await other.clock.install();
+  await other.clock.setSystemTime(new Date(Date.now()+300001));
   await receiving.setOffline(false);
   await expect(other.locator('.purchase-card')).toContainText('Saved while phone offline');
   await expect(other.locator('#sync-message')).toContainText('1 record confirmed on server');

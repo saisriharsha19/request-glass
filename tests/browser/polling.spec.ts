@@ -1,0 +1,22 @@
+import {test,expect} from '@playwright/test';
+test('automatic polling waits five minutes and only reads the visible workspace',async({page})=>{
+ let purchases=0,sources=0;
+ await page.clock.install();
+ await page.route('**/api/auth/config',r=>r.fulfill({json:{configured:true}}));
+ await page.route('**/api/auth/session',r=>r.fulfill({json:{user:{id:'poll-user',name:'Poll',username:'poll'}}}));
+ await page.route('**/api/purchases*',r=>{purchases++;return r.fulfill({json:{purchases:[],revision:0,next:null}});});
+ await page.route('**/api/calendar/sources',r=>{sources++;return r.fulfill({json:{userId:'poll-user',sources:[]}});});
+ await page.goto('/');await expect(page.locator('[data-workspace="items"]')).toBeEnabled();
+ expect(purchases).toBe(1);expect(sources).toBe(0);
+ await page.clock.runFor(299000);expect(purchases).toBe(1);
+ await page.clock.runFor(2000);await expect.poll(()=>purchases).toBe(2);expect(sources).toBe(0);
+ await page.locator('[data-workspace="planner"]').click();await expect.poll(()=>sources).toBe(1);
+ await page.clock.runFor(301000);await expect.poll(()=>sources).toBe(2);expect(purchases).toBe(2);
+ await page.locator('[data-workspace="insights"]').click();await page.clock.runFor(601000);expect(purchases).toBe(2);expect(sources).toBe(2);
+ await page.locator('[data-workspace="items"]').click();await expect.poll(()=>purchases).toBe(3);
+ await page.locator('#sync-now').click();await expect.poll(()=>purchases).toBe(4);
+ await page.evaluate(()=>Object.defineProperty(document,'hidden',{configurable:true,get:()=>true}));
+ await page.clock.runFor(601000);expect(purchases).toBe(4);expect(sources).toBe(2);
+ await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'));});
+ await expect.poll(()=>purchases).toBe(5);
+});
