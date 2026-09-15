@@ -1,0 +1,23 @@
+import {test, expect} from '@playwright/test';
+test('calendar connection is explicit, works on mobile, keeps link on reload and revokes access', async ({page}) => {
+  await page.setViewportSize({width:320,height:740});
+  await page.goto('/account');
+  await page.getByRole('button',{name:'Create account',exact:true}).click();
+  await page.locator('#account-display-name').fill('Calendar test');
+  await page.locator('#account-username').fill('calendar-'+crypto.randomUUID().slice(0,8));
+  await page.locator('#account-password').fill('test-password-123456789');
+  await page.locator('#account-submit').click();
+  await page.locator('#recovery-saved').check();await page.locator('#recovery-done').click();
+  await page.getByRole('link',{name:'Go to my purchases'}).click();
+  await expect(page.locator('#sidebar-sync-status')).toContainText('Signed in as');
+  await page.locator('[data-workspace="planner"]').click();await page.locator('#calendar-connect').click();
+  await expect(page.locator('#calendar-connect-consent')).toBeVisible();
+  await page.locator('#calendar-enable').click();await expect(page.locator('#calendar-feed-url')).toHaveValue(/\/api\/calendar\/feed\/[a-f0-9]{64}\.ics/);
+  const url = await page.locator('#calendar-feed-url').inputValue();
+  expect((await page.request.get(url)).status()).toBe(200);
+  expect(await page.evaluate(()=>document.querySelector('#calendar-connect-dialog')!.scrollWidth <= innerWidth)).toBe(true);
+  await page.reload();await page.locator('[data-workspace="planner"]').click();await page.locator('#calendar-connect').click();
+  await expect(page.locator('#calendar-feed-url')).toHaveValue(url);
+  await page.locator('#calendar-disconnect').click();await expect(page.locator('#calendar-connected')).toBeHidden();
+  expect((await page.request.get(url)).status()).toBe(404);
+});

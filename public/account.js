@@ -134,7 +134,7 @@ $("#download-recovery").onclick = () => {
   const url = URL.createObjectURL(
     new Blob(
       [
-        `ReturnRadar recovery key\nUsername: ${user.username}\nRecovery key: ${recoveryKey}\nKeep this private. It can reset your password.\n`,
+        `Tuckday recovery key\nUsername: ${user.username}\nRecovery key: ${recoveryKey}\nKeep this private. It can reset your password.\n`,
       ],
       { type: "text/plain" },
     ),

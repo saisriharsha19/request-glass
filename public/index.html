@@ -8,17 +8,18 @@
       name="description"
       content="Turn receipts into reminders. Keep return, cancellation, and warranty dates in one private place."
     />
-    <title>ReturnRadar — Records & reminders</title>
+    <title>Tuckday — Records & reminders</title>
     <link rel="stylesheet" href="/style.css" />
     <script src="/app.js" type="module"></script>
 <script src="/character.js" type="module"></script>
+<script src="/calendar-connect.js" type="module"></script>
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <a href="/" class="brand"
           ><span class="radar-logo" data-icon="mark" aria-hidden="true"></span>
-          Return<span>Radar</span></a
+          Tuck<span>day</span></a
         >
         <div class="workspace-label">YOUR FILES</div>
         <nav aria-label="Purchases">
@@ -35,7 +36,7 @@
           <div class="local-badge">
             <span class="green-dot"></span> Saved records
           </div>
-          <p>Guest purchases stay here.<br />Sign in to sync your account.</p>
+          <p id="sidebar-sync-status">Checking your account…</p>
           <button id="export" class="sidebar-link">↓ Export backup</button
           ><label class="sidebar-link import-label" role="button" tabindex="0"
             >↑ Restore backup<input
@@ -66,7 +67,7 @@
           aria-live="polite"
         ></div>
         <main>
-          <section class="sync-strip" aria-label="Account and sync">
+          <section class="sync-strip" id="sync-strip" aria-label="Account and sync">
             <div>
               <strong id="sync-title">Your purchases</strong>
               <p id="sync-message" role="status">Checking your account…</p>
@@ -172,7 +173,7 @@
                   See what’s due, record what’s done, and plan the next step.
                 </p>
               </div>
-              <div class="planner-tools">
+              <div class="planner-tools"><button id="calendar-connect" class="secondary">Connect calendar</button>
                 <button id="planner-new" class="primary">
                   ＋ Add a reminder
                 </button>
@@ -349,7 +350,7 @@
           </div>
           <footer>
             <span
-              >ReturnRadar <span class="footer-divider">/</span> Records &amp;
+              >Tuckday <span class="footer-divider">/</span> Records &amp;
               reminders</span
             ><button id="focus-search" class="keyboard-hint" type="button">
               Find an item <kbd>/</kbd>
@@ -573,5 +574,21 @@
         </button>
       </form>
     </dialog>
+<dialog id="calendar-connect-dialog" aria-labelledby="calendar-connect-title">
+<div class="dialog-heading"><div><span class="eyebrow">TAKE YOUR DATES WITH YOU</span><h2 id="calendar-connect-title">Connect your calendar</h2></div><button type="button" id="calendar-connect-close" class="secondary" aria-label="Close calendar connection">×</button></div>
+<p>Subscribe once to see your upcoming Tuckday reminders in Google, Outlook or Apple Calendar. It keeps working when your devices are offline.</p>
+<p class="fine-print">Read-only: edit reminders in Tuckday. Your calendar controls how often updates arrive; they may take several hours. Calendar edits do not sync back.</p>
+<p id="calendar-connect-status" role="status">Checking connection…</p>
+<a href="/account" id="calendar-connect-signin" hidden>Sign in to connect</a>
+<div id="calendar-connect-consent" hidden><p>The private link shares reminder titles and dates. Anyone with the link can read them. Receipt files, extracted text and notes are excluded.</p><button id="calendar-enable" class="primary" type="button">Create private calendar link</button></div>
+<div id="calendar-connected" hidden>
+<label>Private calendar URL<input id="calendar-feed-url" readonly type="url" spellcheck="false" /></label><button id="calendar-copy" class="secondary" type="button">Copy calendar link</button>
+<div class="calendar-providers">
+<details open><summary>Google Calendar</summary><ol><li>Copy the link above.</li><li>Open Google Calendar on a computer. Beside Other calendars, select + → From URL.</li><li>Paste the link and choose Add calendar.</li></ol><a href="https://calendar.google.com/calendar/u/0/r/settings/addbyurl" target="_blank" rel="noopener noreferrer">Open Google Calendar ↗</a><p class="fine-print">Google requires its desktop website for this step. The subscribed calendar then appears on your phone.</p></details>
+<details><summary>Outlook</summary><ol><li>Copy the link above.</li><li>Open Outlook Calendar → Add calendar → Subscribe from web.</li><li>Paste the link, name it Tuckday and select Import.</li></ol><a href="https://outlook.live.com/calendar/" target="_blank" rel="noopener noreferrer">Open Outlook Calendar ↗</a></details>
+<details><summary>Apple Calendar / other apps</summary><p>Choose New Calendar Subscription or Add Subscribed Calendar, then paste the private URL.</p><a id="calendar-apple">Open calendar subscription ↗</a></details>
+</div><button id="calendar-disconnect" class="danger" type="button">Disconnect private link</button><p class="fine-print">Disconnect stops future access. Remove the subscribed calendar from your calendar app to remove its cached events.</p>
+</div><button id="calendar-connect-retry" class="secondary" type="button" hidden>Retry connection</button>
+</dialog>
   </body>
 </html>

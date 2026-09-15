@@ -32,7 +32,8 @@ const accountLoaded = new Promise((resolve) => {
 let accountReady = false,
   editingVersion = 0,
   draftId = "",
-  syncRunning = false;
+  syncRunning = false,
+  syncRequested = false;
 const accountUpdates =
   typeof BroadcastChannel === "function"
     ? new BroadcastChannel("returnradar-account")
@@ -61,6 +62,9 @@ async function afterWrite() {
   } else await reload();
 }
 async function updateAccountUI() {
+  $("#sidebar-sync-status").textContent = sync.user
+    ? `Signed in as @${sync.user.username}. Saved records stay in your account, even when other devices are offline.`
+    : "Guest records stay on this device. Sign in to save them to your account.";
   $("#sync-title").textContent = sync.user
     ? `Hi, ${sync.user.name}. @${sync.user.username}`
     : "On this device";
@@ -80,7 +84,11 @@ async function updateAccountUI() {
     !local.some((p) => isPurchase(p) && !purchases.some((c) => c.id === p.id));
 }
 async function refreshSync({ force = false, session = false } = {}) {
-  if (!accountReady || syncRunning || document.hidden) return;
+  if (document.hidden) return;
+  if (syncRunning) {
+    if (force || session) syncRequested = true;
+    return;
+  }
   if ($("#purchase-dialog").open) {
     if (force || session)
       syncMessage(
@@ -90,7 +98,15 @@ async function refreshSync({ force = false, session = false } = {}) {
   }
   syncRunning = true;
   $("#sync-now").disabled = true;
+  $("#sync-now").textContent = "Checking…";
+  $("#sync-strip").setAttribute("aria-busy", "true");
+  if (force || session || !accountReady) syncMessage("Checking your account and saved records…");
   try {
+    if (!accountReady) {
+      await sync.initialize();
+      await reload(true);
+      accountReady = true;
+    }
     if (session && (await sync.refreshSession())) {
       loadSequence++;
       purchases = [];
@@ -100,7 +116,7 @@ async function refreshSync({ force = false, session = false } = {}) {
     await updateAccountUI();
     syncMessage(
       sync.user
-        ? `@${sync.user.username} · ${purchases.length} saved items · Checked ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+        ? `@${sync.user.username} · ${purchases.length} ${purchases.length === 1 ? "record" : "records"} confirmed on server · Checked ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
         : "Device-only mode. Sign in to the same username on each device to sync.",
     );
   } catch (error) {
@@ -109,6 +125,12 @@ async function refreshSync({ force = false, session = false } = {}) {
   } finally {
     syncRunning = false;
     $("#sync-now").disabled = false;
+    $("#sync-now").textContent = accountReady ? "Sync now" : "Retry connection";
+    $("#sync-strip").removeAttribute("aria-busy");
+    if (syncRequested) {
+      syncRequested = false;
+      void refreshSync({ force: true, session: true });
+    }
   }
 }
 const fields = [
@@ -187,6 +209,8 @@ function toast(message) {
 async function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open("return-radar", 2);
+    let expired = false;
+    const timeout = setTimeout(() => { expired = true; reject(new Error("Browser storage did not open.")); }, 5000);
     req.onupgradeneeded = () => {
       const database = req.result;
       if (!database.objectStoreNames.contains("purchases"))
@@ -205,6 +229,8 @@ async function openDB() {
       };
     };
     req.onsuccess = () => {
+      clearTimeout(timeout);
+      if (expired) { req.result.close(); return; }
       req.result.onversionchange = () => {
         req.result.close();
         db = null;
@@ -212,9 +238,8 @@ async function openDB() {
       };
       resolve(req.result);
     };
-    req.onerror = () => reject(req.error);
-    req.onblocked = () =>
-      reject(new Error("Close another ReturnRadar tab, then reload."));
+    req.onerror = () => { clearTimeout(timeout); reject(req.error); };
+    req.onblocked = () => { expired = true; clearTimeout(timeout); reject(new Error("Close another Tuckday tab, then reload.")); };
   });
 }
 function transaction(mode, action) {
@@ -243,6 +268,8 @@ async function reload(force = false) {
     : await transaction("readonly", (store) => store.getAll());
   if (sequence !== loadSequence) return;
   if (result) {
+    if (sync.user && result.some(p => !isPurchase(p)))
+      throw new Error("Some saved records could not be read by this version. Reload the app; your records remain on the server.");
     purchases = result.filter(isPurchase);
     render();
   }
@@ -1019,7 +1046,7 @@ async function sample() {
     `SAMPLE RECEIPT — fictional purchase\nStore: Sound & Sunday\nItem: Cloud Nine Headphones (sample)\nPurchase date: ${today()}\nTotal paid: USD 129.00\nReturn by: ${future}`;
   extract();
   $("#notes").value =
-    "Sample purchase for trying ReturnRadar. Not a real receipt.";
+    "Sample purchase for trying Tuckday. Not a real receipt.";
 }
 for (const category of categories) {
   for (const id of ["#category", "#category-filter"]) {
@@ -1126,7 +1153,7 @@ try {
   await updateAccountUI();
   syncMessage(
     sync.user
-      ? "Up to date across your devices."
+      ? `@${sync.user.username} · ${purchases.length} ${purchases.length === 1 ? "record" : "records"} confirmed on server. Other devices may be offline.`
       : "Sign in to sync. Device-only purchases stay in this browser.",
   );
 } catch (error) {
@@ -1136,10 +1163,7 @@ try {
 } finally {
   finishAccountLoad();
 }
-$("#sync-now").onclick = () =>
-  accountReady
-    ? refreshSync({ force: true, session: true })
-    : location.reload();
+$("#sync-now").onclick = () => refreshSync({ force: true, session: true });
 $("#claim-local").onclick = async () => {
   if (!sync.user || syncRunning) return;
   const local = (await transaction("readonly", (s) => s.getAll())).filter(

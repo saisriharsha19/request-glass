@@ -152,7 +152,7 @@ test("mobile resume refreshes the same account without pressing Sync now", async
       "Appears when phone resumes",
     );
     await expect(phone.locator("#sync-message")).toContainText(`@${username}`);
-    await expect(phone.locator("#sync-message")).toContainText("1 saved items");
+    await expect(phone.locator("#sync-message")).toContainText("1 record confirmed on server");
     await phone.getByRole("button", { name: "View / edit" }).click();
     await phone.locator("#notes").fill("Keep my typing");
     await phone.evaluate(() => window.dispatchEvent(new Event("online")));
@@ -232,4 +232,41 @@ test("a delayed sync response cannot overwrite a purchase saved while it was in 
   await expect(page.locator(".purchase-card")).toContainText(
     "Newer saved version",
   );
+});
+
+test('account initialization retries after a failed first request without reloading', async ({ page }) => {
+  const username = 'retry-' + crypto.randomUUID().slice(0, 8);
+  await register(page, username);
+  await page.locator('#new-purchase').click();
+  await page.locator('#item').fill('Stored before connection trouble');
+  await page.locator('#save').click();
+  let fail = true;
+  await page.route('**/api/auth/config', async route => {
+    if (fail) await route.abort(); else await route.continue();
+  });
+  await page.reload();
+  await expect(page.locator('#sync-now')).toHaveText('Retry connection');
+  fail = false;
+  await page.locator('#sync-now').click();
+  await expect(page.locator('#sync-title')).toContainText(username);
+  await expect(page.locator('.purchase-card')).toContainText('Stored before connection trouble');
+  await expect(page.locator('#sync-message')).toContainText('1 record confirmed on server');
+});
+
+test('server keeps a save after the writing device closes and the receiving device reconnects', async ({ page, browser }) => {
+  const username = 'closed-' + crypto.randomUUID().slice(0, 8);
+  await register(page, username);
+  const receiving = await browser.newContext({baseURL: 'http://127.0.0.1:3210'});
+  const other = await receiving.newPage();
+  await login(other, username);
+  await receiving.setOffline(true);
+  await page.locator('#new-purchase').click();
+  await page.locator('#item').fill('Saved while phone offline');
+  await page.locator('#save').click();
+  await expect(page.locator('.purchase-card')).toContainText('Saved while phone offline');
+  await page.close();
+  await receiving.setOffline(false);
+  await expect(other.locator('.purchase-card')).toContainText('Saved while phone offline');
+  await expect(other.locator('#sync-message')).toContainText('1 record confirmed on server');
+  await receiving.close();
 });

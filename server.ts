@@ -1,3 +1,4 @@
+import { calendarApi } from "./calendar-api";
 import { extractWithNim, validImages } from "./ai";
 const host =
   process.env.HOST ?? (process.env.RENDER === "true" ? "0.0.0.0" : "127.0.0.1");
@@ -15,7 +16,7 @@ const accountEnv =
           process.env.ACCOUNT_DB_PATH || ".local/accounts.sqlite",
           await Bun.file(
             new URL("./migrations/0001_accounts.sql", import.meta.url),
-          ).text(),
+          ).text() + "\n" + await Bun.file(new URL("./migrations/0002_calendar_subscriptions.sql", import.meta.url)).text(),
         ),
       };
 let aiWindow = Date.now(),
@@ -42,6 +43,8 @@ Bun.serve({
   async fetch(request) {
     const path = new URL(request.url).pathname;
     const headers = securityHeaders();
+    const calendarResponse = await calendarApi(request, accountEnv);
+    if (calendarResponse) return calendarResponse;
     const accountResponse = await accountApi(request, accountEnv);
     if (accountResponse) return accountResponse;
     if (path === "/api/ai/extract" && request.method === "POST") {

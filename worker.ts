@@ -1,3 +1,4 @@
+import { calendarApi } from "./calendar-api";
 import { extractWithNim, validImages } from "./ai";
 import { accountIdentity, securityHeaders, type AuthEnv } from "./auth";
 import { accountApi, readBody } from "./account-api";
@@ -30,6 +31,8 @@ export default {
     }
     if (url.pathname === "/healthz")
       return new Response("ok", { headers: securityHeaders(env) });
+    const calendarResponse = await calendarApi(request, env);
+    if (calendarResponse) return calendarResponse;
     const accountResponse = await accountApi(request, env);
     if (accountResponse) return accountResponse;
     if (url.pathname === "/api/ai/extract" && request.method === "POST") {

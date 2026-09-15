@@ -1,4 +1,4 @@
-// A small, consistent set drawn on a 24px grid for ReturnRadar.
+// A small, consistent set drawn on a 24px grid for Tuckday.
 const paths = {
   pocket:
     '<path d="m6 8 2-5 11 3-1 6M4 10V6h8l3 4M3 10h18l-2 11H5z"/><path d="m8 15 3 2 5-4"/>',

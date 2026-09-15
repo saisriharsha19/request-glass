@@ -191,7 +191,7 @@ export function calendar(purchases) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//ReturnRadar//Purchase reminders//EN",
+    "PRODID:-//Tuckday//Purchase reminders//EN",
     "CALSCALE:GREGORIAN",
   ];
   let count = 0;
@@ -217,7 +217,7 @@ export function calendar(purchases) {
         `DTSTART;VALUE=DATE:${date.replaceAll("-", "")}`,
         `DTEND;VALUE=DATE:${next.toISOString().slice(0, 10).replaceAll("-", "")}`,
         `SUMMARY:${escapeICS(`${key === "reminder" ? purchase.reminderLabel || label : label}: ${purchase.item}`)}`,
-        `DESCRIPTION:${escapeICS(`${purchase.merchant}\n${purchase.notes}\nDate reviewed in ReturnRadar. Check the merchant's exact cutoff time.\nConfirm the selected alert in your calendar, especially for a near deadline.`)}`,
+        `DESCRIPTION:${escapeICS(`${purchase.merchant}\n${purchase.notes}\nDate reviewed in Tuckday. Check the merchant's exact cutoff time.\nConfirm the selected alert in your calendar, especially for a near deadline.`)}`,
         "BEGIN:VALARM",
         `TRIGGER:-P${Number.isInteger(purchase.leadDays) ? purchase.leadDays : 3}D`,
         "ACTION:DISPLAY",

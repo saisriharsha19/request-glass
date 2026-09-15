@@ -1,4 +1,4 @@
-# ReturnRadar
+# Tuckday
 
 Purchase details, reviewed deadlines, calendar reminders, and optional NVIDIA NIM receipt assistance. Built with Bun and a responsive browser UI.
 
@@ -84,3 +84,7 @@ Upload PDF, PNG/JPEG/WebP, TXT, Markdown, CSV/TSV, HTML, RTF, DOCX, ODT, XLSX or
 Sync checks mobile visibility/resume, page restoration, focus and reconnect as well as periodic polling. A visible account username, item count and check time help compare devices. Editing suspends refresh to preserve your draft; closing the editor refreshes changes. Failed requests display an error, and stale reads cannot overwrite a newer successful save.
 
 The illustrated folder reacts only to nearby pointers and gives a brief double blink on tap or keyboard activation. Reduced-motion preferences disable these effects and the finite paper-cut celebrations. [Artwork prompt, provenance and interaction references](docs/design/illustration.md).
+
+## Tuckday connections and recovery
+
+Calendar → Connect calendar creates a revocable, read-only subscription URL for Google, Outlook and Apple Calendar. Providers fetch updates on their own schedules; this is separate from two-way OAuth access. Signed-in sidebar status and server-confirmed sync counts distinguish account records from guest records. A failed startup connection now recovers automatically or through Retry connection. The receiving device can reconnect after the writer closes. AI assistance can also extract explicitly dated bill/renewal reminders with evidence. [Deployment and connection details](docs/tuckday-release.md).

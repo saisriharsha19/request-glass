@@ -118,3 +118,9 @@ test("vision is sent once and only readings go to structured extraction", async 
   expect(JSON.stringify(bodies[1])).not.toContain("base64");
   expect(d.item?.source).toBe("image");
 });
+
+test('AI document reminders require dated evidence and preserve explicit purpose', () => {
+  const text = 'Payment due: October 12, 2026. Pay within 30 days.';
+  expect(validateDraft({ reminder: {value: '2026-10-12', evidence: 'Payment due: October 12, 2026'}, reminderLabel: {value: 'Payment due', evidence: 'Payment due: October 12, 2026'} }, text)).toMatchObject({reminder: {value: '2026-10-12'}, reminderLabel: {value: 'Payment due'}});
+  expect(validateDraft({ reminder: {value: '2026-11-11', evidence: 'Pay within 30 days.'} }, text)).toEqual({});
+});

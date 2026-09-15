@@ -10,7 +10,9 @@
     "test:browser": "playwright test",
     "build:cloudflare": "bun run scripts/build-cloudflare.ts",
     "dev:cloudflare": "wrangler dev",
-    "deploy:cloudflare": "wrangler deploy"
+    "deploy:cloudflare": "wrangler deploy",
+    "build:pages": "bun run scripts/build-pages.ts",
+    "deploy:pages": "bun run build:pages && wrangler pages deploy dist-cloudflare --project-name tuckday --branch main"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

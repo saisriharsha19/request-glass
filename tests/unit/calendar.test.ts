@@ -1,0 +1,33 @@
+import {test, expect} from 'bun:test';
+import {localDatabase} from '../../local-db';
+import {calendarApi} from '../../calendar-api';
+import {accountApi} from '../../account-api';
+const schema = await Bun.file('migrations/0001_accounts.sql').text() + '\n' + await Bun.file('migrations/0002_calendar_subscriptions.sql').text();
+test('private calendar is durable, scoped to its owner, omits private document data and can be revoked', async () => {
+  const env = {DB: localDatabase(':memory:', schema)};
+  const origin = 'https://test.example';
+  const register = async (username: string) => {
+    const response = (await accountApi(new Request(origin+'/api/auth/register', {method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({username,name:username,password:'test-password-123456789'})}), env))!;
+    return response.headers.get('set-cookie')!.split(';')[0];
+  };
+  const alice = await register('alice');const bob = await register('bob');
+  const call = async (path: string, method='GET', cookie='', requestOrigin=origin) => (await calendarApi(new Request(origin+path,{method,headers:{Origin:requestOrigin,Cookie:cookie,'Content-Type':'application/json'},...(method==='GET'?{}:{body:'{}'})}),env))!;
+  expect((await call('/api/calendar/subscription','POST')).status).toBe(401);
+  expect((await call('/api/calendar/subscription','POST',alice,'https://evil.example')).status).toBe(403);
+  const {url} = await (await call('/api/calendar/subscription','POST',alice)).json();
+  expect((await (await call('/api/calendar/subscription','GET',bob)).json()).url).toBeNull();
+  const account: any = await env.DB.prepare('SELECT id FROM accounts WHERE username=?').bind('alice').first();
+  const purchase = {id:'document',item:'Renew passport',reminder:'2099-01-01',reminderLabel:'Expiry',notes:'PRIVATE NOTE',text:'PRIVATE RECEIPT',merchant:'PRIVATE MERCHANT',leadDays:7};
+  await env.DB.prepare('INSERT INTO purchases(user_id,id,payload) VALUES (?,?,?)').bind(account.id,purchase.id,JSON.stringify(purchase)).run();
+  const feed = new URL(url).pathname;
+  const response = await call(feed);const content = await response.text();
+  expect(content).toContain('Renew passport');expect(content).toContain('20990101');expect(content).not.toContain('PRIVATE');
+  expect(response.headers.get('cache-control')).toBe('no-store');
+  await env.DB.prepare('UPDATE purchases SET payload=?,version=version+1 WHERE user_id=? AND id=?').bind(JSON.stringify({...purchase,reminder:'2099-02-01'}),account.id,purchase.id).run();
+  expect(await (await call(feed)).text()).toContain('20990201');
+  expect((await (await call('/api/calendar/subscription','GET',alice)).json()).url).toBe(url);
+  await call('/api/calendar/subscription','DELETE',alice);
+  expect((await call(feed)).status).toBe(404);
+  const recreated = await (await call('/api/calendar/subscription','POST',alice)).json();
+  expect(recreated.url).not.toBe(url);
+});
