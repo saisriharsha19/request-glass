@@ -1,4 +1,10 @@
 export const assets: Record<string, string> = {
+  "/favicon.svg": "public/favicon.svg",
+  "/icon-32.png": "public/icon-32.png",
+  "/icon-180.png": "public/icon-180.png",
+  "/icon-192.png": "public/icon-192.png",
+  "/icon-512.png": "public/icon-512.png",
+  "/site.webmanifest": "public/site.webmanifest",
   "/": "public/index.html",
   "/account": "public/account.html",
   "/account.html": "public/account.html",
