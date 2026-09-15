@@ -20,7 +20,11 @@ export function createFrontend(fetcher: (request: Request) => Promise<Response> 
       if (url.pathname === '/api/calendar/subscription' && response.ok) {
         const result = await response.json() as {url: string | null};
         if (result.url) result.url = result.url.replace(backend, url.origin);
-        return Response.json(result, {status: response.status, headers: response.headers});
+        const responseHeaders = new Headers(response.headers);
+        responseHeaders.delete("content-length");
+        responseHeaders.delete("content-encoding");
+        responseHeaders.delete("etag");
+        return Response.json(result, {status: response.status, headers: responseHeaders});
       }
       return response;
     },
