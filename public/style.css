@@ -1171,7 +1171,7 @@ kbd {
 }
 .month-day[aria-pressed="true"] {
   background: var(--tone-mark, #536849);
-  color: var(--muted);
+  color: var(--selected-date-ink);
   border-color: var(--tone-edge, #536849);
 }
 .day-dot {
@@ -2789,14 +2789,14 @@ input:not([type="checkbox"]):focus-visible, textarea:focus-visible, select:focus
   --bg:#f6f3e9; --muted:#56614e; --line:#ccd0c0;
   --link:#315d78; --danger:#923f2c;
   --pattern:#52684b24; --header:#e4e8d8;
-  --on-accent:#fffefa;
+  --on-accent:#fffefa; --selected-date-ink:#fffefa;
 }
 :root[data-theme="dark"] {
   color-scheme:dark;
   --bg:#22251f; --surface:#2b3028; --ink:#f2efdf; --muted:#bec5b2;
   --line:#535c4c; --accent:#efac89; --accent-hover:#ffc09e;
   --green:#bbce9e; --paper:#3b382b; --soft:#343c2e;
-  --link:#a7cee0; --danger:#ffb49e; --header:#30382e; --on-accent:#30261f;
+  --link:#a7cee0; --danger:#ffb49e; --header:#30382e; --on-accent:#30261f; --selected-date-ink:#22251f;
   --pattern:#c0cda024;
   --tone-surface:var(--surface); --tone-soft:#343b2f; --tone-paper:#3b382b;
   --tone-edge:var(--line); --tone-mark:#abbc88;
