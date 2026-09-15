@@ -128,7 +128,7 @@ async function refreshSync({ force = false, session = false } = {}) {
   syncRunning = true;
   $("#sync-now").disabled = true;
   $("#sync-now").textContent = "Checking…";
-  $("#sync-strip").setAttribute("aria-busy", "true");
+  $("#header-sync").setAttribute("aria-busy", "true");
   if (force || session || !accountReady) syncMessage("Checking your account and saved records…");
   try {
     if (!accountReady) {
@@ -155,7 +155,7 @@ async function refreshSync({ force = false, session = false } = {}) {
     syncRunning = false;
     $("#sync-now").disabled = false;
     $("#sync-now").textContent = accountReady ? "Sync now" : "Retry connection";
-    $("#sync-strip").removeAttribute("aria-busy");
+    $("#header-sync").removeAttribute("aria-busy");
     if (syncRequested) {
       syncRequested = false;
       void refreshSync({ force: true, session: true });
@@ -1230,7 +1230,7 @@ try {
   await updateAccountUI();
   syncMessage(
     sync.user
-      ? `@${sync.user.username} · ${purchases.length} ${purchases.length === 1 ? "record" : "records"} confirmed on server. Other devices may be offline.`
+      ? `@${sync.user.username} · ${purchases.length} ${purchases.length === 1 ? "record" : "records"} confirmed on server · Checked ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
       : "Sign in to sync. Device-only purchases stay in this browser.",
   );
 } catch (error) {

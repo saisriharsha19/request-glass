@@ -13,6 +13,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <script src="/theme.js"></script>
     <link rel="stylesheet" href="/style.css" />
     <script src="/app.js" type="module"></script>
 <script src="/character.js" type="module"></script>
@@ -65,11 +66,16 @@
             Your space <span>/</span> <strong id="view-name">Overview</strong>
           </div>
           <div class="header-right">
+            <label class="theme-control">Theme<select data-theme-picker aria-label="Color theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
             <a class="account-link" href="/account">Your account ↗</a>
             <span id="today-label"></span
             ><span class="private-pill"
               ><i></i><span id="storage-state">Saved on your device</span></span
             >
+          </div>
+          <div class="header-sync" id="header-sync" aria-label="Sync status">
+            <p id="sync-message" role="status">Checking your account…</p>
+            <button id="sync-now" class="secondary" hidden>Sync now</button>
           </div>
         </header>
         <div
@@ -82,11 +88,10 @@
           <section class="sync-strip" id="sync-strip" aria-label="Account and sync">
             <div>
               <strong id="sync-title">Your purchases</strong>
-              <p id="sync-message" role="status">Checking your account…</p>
+
             </div>
             <div class="sync-actions">
-              <button id="sync-now" class="secondary" hidden>Sync now</button
-              ><button id="claim-local" class="secondary" hidden>
+              <button id="claim-local" class="secondary" hidden>
                 Add device purchases</button
               ><a id="sync-signin" href="/account">Sign in to sync ↗</a>
             </div>

@@ -30,6 +30,7 @@ export const assets: Record<string, string> = {
   "/pdf.js": "public/pdf.js",
   "/pdf/pdf.min.mjs": "node_modules/pdfjs-dist/build/pdf.min.mjs",
   "/pdf/pdf.worker.min.mjs": "node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
+  "/theme.js": "public/theme.js",
   "/style.css": "public/style.css",
   "/ocr/tesseract.min.js": "node_modules/tesseract.js/dist/tesseract.min.js",
   "/ocr/worker.min.js": "node_modules/tesseract.js/dist/worker.min.js",
