@@ -25,17 +25,22 @@
           ><span class="radar-logo" data-icon="mark" aria-hidden="true"></span>
           Tuck<span>day</span></a
         >
-        <div class="workspace-label">YOUR FILES</div>
-        <nav aria-label="Purchases">
-          <button class="nav-item selected" data-view="all">
-            <span data-icon="folder"></span> Overview
-            <b id="nav-count">0</b></button
-          ><button class="nav-item" data-view="soon">
-            <span data-icon="clock"></span> Coming up</button
-          ><button class="nav-item" data-view="archived">
-            <span data-icon="archive"></span> Archived
-          </button>
-        </nav>
+        <div class="workspace-label">YOUR SPACE</div>
+          <nav class="workspace-tabs" aria-label="Workspace">
+            <button type="button" data-workspace="items" disabled aria-pressed="true">
+              <span data-icon="folder"></span> Records
+            </button>
+            <button type="button" data-workspace="planner" disabled aria-pressed="false">
+              <span data-icon="calendar"></span> Calendar
+            </button>
+            <button
+              type="button"
+              data-workspace="insights" disabled
+              aria-pressed="false"
+            >
+              <span data-icon="chart"></span> Insights
+            </button>
+          </nav>
         <div class="sidebar-bottom">
           <div class="local-badge">
             <span class="green-dot"></span> Saved records
@@ -153,21 +158,7 @@
               </div>
             </div>
           </section>
-          <nav class="workspace-tabs" aria-label="Workspace">
-            <button type="button" data-workspace="items" disabled aria-pressed="true">
-              <span data-icon="folder"></span> Your items
-            </button>
-            <button type="button" data-workspace="planner" disabled aria-pressed="false">
-              <span data-icon="calendar"></span> Calendar
-            </button>
-            <button
-              type="button"
-              data-workspace="insights" disabled
-              aria-pressed="false"
-            >
-              <span data-icon="chart"></span> Insights
-            </button>
-          </nav>
+
           <section id="planner-workspace" class="workspace-panel" hidden>
             <div class="workspace-heading">
               <div>
@@ -257,6 +248,16 @@
           </section>
           <div class="content-grid" id="items-workspace">
             <section class="purchase-section">
+        <nav class="record-views" aria-label="Record views">
+          <button class="record-view selected" data-view="all">
+            <span data-icon="folder"></span> All records
+            <b id="nav-count">0</b></button
+          ><button class="record-view" data-view="soon">
+            <span data-icon="clock"></span> Coming up</button
+          ><button class="record-view" data-view="archived">
+            <span data-icon="archive"></span> Archived
+          </button>
+        </nav>
               <div class="section-heading">
                 <h2 id="list-title">
                   Your purchases <span id="list-count">0</span>
@@ -327,29 +328,7 @@
                   ↓ Export all reminders</button
                 ><small>Import into Apple, Google or Outlook Calendar.</small>
               </section>
-              <section class="tools-card">
-                <div class="eyebrow">USE YOUR RECORDS</div>
-                <h3>Take them with you.</h3>
-                <button id="quick-calendar" class="tool-row" type="button">
-                  <span data-icon="calendar"></span
-                  ><span
-                    >Open calendar<small
-                      >View dates and set reminders</small
-                    ></span
-                  ><span data-icon="arrow"></span></button
-                ><button id="quick-csv" class="tool-row" type="button">
-                  <span data-icon="chart"></span
-                  ><span
-                    >Download spreadsheet<small
-                      >Amounts, dates and notes as CSV</small
-                    ></span
-                  ><span data-icon="arrow"></span>
-                </button>
-                <p class="fine-print">
-                  Source files are processed temporarily. Your reviewed text and
-                  details are saved.
-                </p>
-              </section>
+
             </aside>
           </div>
           <footer>

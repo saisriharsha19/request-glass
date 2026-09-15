@@ -38,7 +38,7 @@ export function createPlanner({
   let month = today().slice(0, 7),
     selected = "",
     filter = "upcoming",
-    imported = [], limit = 50;
+    imported = [], limit = 50, sourceSelection="all";
   const apply = async (p, change) => {
     try {
       await save({ ...p, ...change }, p._version || 0);
@@ -54,7 +54,7 @@ export function createPlanner({
     const purchases = getPurchases();
     const connected = getSources();
     $("#connected-calendars-summary").textContent = connected.length ? `${connected.length} connected calendar${connected.length === 1 ? "" : "s"} · ${getExternalEvents().length} events loaded around this month${connected.some(source => source.error) ? " · A calendar needs attention; open Connect calendar." : ""}` : "Connect Google, Outlook or iCloud calendars to bring their events into this view.";
-    const picker = $("#calendar-source-filter"), chosen = picker.value;
+    const picker = $("#calendar-source-filter"), chosen = sourceSelection;
     picker.replaceChildren(new Option("All calendars", "all"), new Option("Tuckday reminders", "tuckday"), ...getSources().map(source => new Option(source.name, source.id)));
     picker.value = [...picker.options].some(option => option.value === chosen) ? chosen : "all";
     const events = [...itemEvents(purchases, { includeCompleted: true }), ...getExternalEvents()].filter(event => picker.value === "all" || (picker.value === "tuckday" ? !event.external : event.sourceId === picker.value)).sort((a,b) => a.date.localeCompare(b.date) || (a.sort || a.date).localeCompare(b.sort || b.date));
@@ -381,8 +381,11 @@ export function createPlanner({
       $("#confirm-calendar-import").disabled = false;
     }
   };
-  $("#calendar-source-filter").onchange = render;
+  $("#calendar-source-filter").onchange = e=>{sourceSelection=e.target.value;render();};
   setInterval(() => { if(!document.hidden && !$("#planner-workspace").hidden) render(); }, 30000);
   $("#calendar-timezone").textContent = `Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " ")}. Past events move out of Upcoming automatically.`;
-  return { render };
+  return { render,
+    getState:()=>({month,selected,filter,source:sourceSelection,limit}),
+    restore(state){month=state.month||today().slice(0,7);selected=state.selected;filter=state.filter;sourceSelection=state.source;limit=state.limit;$("#agenda-filter").value=filter;render();}
+  };
 }

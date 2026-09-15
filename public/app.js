@@ -1,3 +1,4 @@
+import {createViewState} from '/ui-state.js';
 import {linkify} from '/links.js';
 import { connectedEvents, connectedSources, setCalendarRange, calendarPage, loadCalendarPage } from "/calendar-sources.js";
 import { celebrate } from "/celebration.js";
@@ -939,7 +940,8 @@ $("#delete").onclick = async () => {
 };
 for (const btn of document.querySelectorAll("[data-view]"))
   btn.onclick = () => {
-    selectWorkspace("items");
+    const changed=view!==btn.dataset.view;
+    if(changed)saveView();
     view = btn.dataset.view;
     for (const b of document.querySelectorAll("[data-view]"))
       b.classList.toggle("selected", b === btn);
@@ -951,7 +953,9 @@ for (const btn of document.querySelectorAll("[data-view]"))
         : view === "soon"
           ? "Coming up this week "
           : "Your purchases ";
+    selectWorkspace("items");
     render();
+    if(changed)saveView(true);
   };
 for (const btn of document.querySelectorAll("[data-filter]"))
   btn.onclick = () => {
@@ -1073,7 +1077,14 @@ $("#template-select").onchange = async (event) => {
     $(`#${key}`).value = value;
   setMethod("manual");
 };
+let activeWorkspace="items", viewReady=false, applyingView=false, savedScroll={}, restoreFrame=0;
+const viewStore=createViewState();
+function snapshotView(){return {workspace:activeWorkspace,view,filter,query:$("#search").value,sort:$("#sort").value,category:$("#category-filter").value,favorites:$("#favorites-only").checked,limit:pageLimit,scroll:savedScroll,calendar:planner.getState()};}
+function saveView(push=false){if(viewReady&&!applyingView)viewStore.save(snapshotView(),push);}
 function selectWorkspace(selected) {
+  const changed=selected!==activeWorkspace;
+  if(viewReady&&changed&&!applyingView){savedScroll[activeWorkspace]=scrollY;saveView();}
+  activeWorkspace=selected;
   for (const button of document.querySelectorAll("[data-workspace]"))
     button.setAttribute(
       "aria-pressed",
@@ -1082,11 +1093,15 @@ function selectWorkspace(selected) {
   for (const name of ["items", "planner", "insights"])
     $(`#${name}-workspace`).hidden = name !== selected;
   $(".intro").hidden = selected !== "items";
+  $(".stats").hidden = selected !== "items";
+  $("#view-name").textContent=selected==='planner'?'Calendar':selected==='insights'?'Insights':view==='soon'?'Records / Coming up':view==='archived'?'Records / Archived':'Records';
+  document.title=`${selected==='planner'?'Calendar':selected==='insights'?'Insights':'Records'} — Tuckday`;
+  for(const button of document.querySelectorAll('[data-workspace]')){if(button.dataset.workspace===selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');}
   planner?.render();
+  if(viewReady&&changed&&!applyingView){saveView(true);cancelAnimationFrame(restoreFrame);restoreFrame=requestAnimationFrame(()=>scrollTo({top:savedScroll[selected]||0,behavior:'instant'}));}
 }
 for (const button of document.querySelectorAll("[data-workspace]")) {
   button.onclick = () => selectWorkspace(button.dataset.workspace);
-  button.disabled = false;
 }
 $("#planner-new").onclick = async () => {
   await openPurchase();
@@ -1134,9 +1149,8 @@ function focusSearch() {
   $("#search").focus();
 }
 $("#focus-search").onclick = focusSearch;
-$("#next-date-open").onclick = $("#quick-calendar").onclick = () =>
+$("#next-date-open").onclick = () =>
   selectWorkspace("planner");
-$("#quick-csv").onclick = () => $("#export-csv").click();
 document.addEventListener("keydown", (event) => {
   if (
     event.key === "/" &&
@@ -1477,3 +1491,26 @@ async function prepareVisionSheet(images) {
 }
 
 window.addEventListener("tuckday-calendars-changed", () => planner?.render());
+
+function applyView(state){
+ applyingView=true;
+ savedScroll=state.scroll;view=state.view;filter=state.filter;pageLimit=state.limit;
+ $("#search").value=state.query;$("#sort").value=state.sort;$("#category-filter").value=state.category;
+ if(!$("#category-filter").value)$("#category-filter").value='all';
+ $("#favorites-only").checked=state.favorites;
+ for(const b of document.querySelectorAll('[data-view]'))b.classList.toggle('selected',b.dataset.view===view);
+ for(const b of document.querySelectorAll('[data-filter]'))b.classList.toggle('active',b.dataset.filter===filter);
+ $("#view-name").textContent=view==='all'?'Overview':view==='soon'?'Coming up':'Archived';
+ $("#list-title").firstChild.textContent=view==='archived'?'Archived purchases ':view==='soon'?'Coming up this week ':'Your purchases ';
+ planner.restore(state.calendar);selectWorkspace(state.workspace);render();
+ applyingView=false;
+ cancelAnimationFrame(restoreFrame);restoreFrame=requestAnimationFrame(()=>scrollTo({top:savedScroll[activeWorkspace]||0,behavior:'instant'}));
+}
+accountLoaded.then(()=>{viewReady=true;applyView(viewStore.bind(sync.user?.id,true));for(const button of document.querySelectorAll("[data-workspace]"))button.disabled=false;});
+window.addEventListener('tuckday-account-changed',event=>{if(!viewReady)return;applyView(viewStore.bind(event.detail?.userId));});
+window.addEventListener('popstate',()=>{if(!viewReady)return;for(const d of document.querySelectorAll('dialog[open]'))d.close();applyView(viewStore.restoreHistory());});
+const viewControls='#search,#sort,#category-filter,#favorites-only,#agenda-filter,#calendar-source-filter,#month-jump,[data-view],[data-filter],#month-grid,#month-prev,#month-next,#month-today,#clear-day,#load-more,#agenda-more';
+for(const name of ['input','change','click'])document.addEventListener(name,event=>{if(event.target.closest?.(viewControls))queueMicrotask(()=>saveView());});
+let scrollTimer;
+window.addEventListener('scroll',()=>{clearTimeout(scrollTimer);scrollTimer=setTimeout(()=>{if(viewReady&&!document.querySelector('dialog[open]')){savedScroll[activeWorkspace]=scrollY;saveView();}},150);},{passive:true});
+window.addEventListener('pagehide',()=>{if(viewReady){savedScroll[activeWorkspace]=scrollY;saveView();}});
