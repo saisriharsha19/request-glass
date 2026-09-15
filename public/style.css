@@ -2697,3 +2697,27 @@ select option { font:inherit; color:var(--ink); background:var(--surface); }
 }
 
 .agenda-heading { margin-bottom:16px; }
+/* Dialogs own their vertical scrolling; nested flex/grid content may shrink. */
+dialog { overflow-x:hidden; overflow-y:auto; }
+dialog form, dialog section, dialog details, .modal-header > div, .dialog-heading > div,
+.ai-assist > div, .ai-assist > div:first-child > div, .import-event > span {
+  min-width:0; max-width:100%; overflow-wrap:anywhere;
+}
+.form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.capture-tabs button { min-width:0; overflow-wrap:anywhere; }
+.form-section-heading { flex-wrap:wrap; }
+dialog input:not([type="checkbox"]), dialog textarea, dialog select { box-sizing:border-box; min-width:0; max-width:100%; }
+@media(max-width:700px) {
+  dialog, dialog.utility-dialog, #calendar-connect-dialog {
+    position:fixed; inset:0; width:100%; max-width:100%; min-width:0;
+    height:100dvh; max-height:100dvh; margin:0; border:0; border-radius:0;
+    padding:20px max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  }
+  .form-grid { grid-template-columns:minmax(0,1fr); }
+  .ai-assist > div:first-child { min-width:0; flex-basis:100%; }
+  .ai-mark { flex-shrink:0; }
+  dialog input:not([type="checkbox"]), dialog textarea, dialog select { width:100%; font-size:16px; }
+  .modal-footer { flex-wrap:wrap; }
+}
+/* The full-width form input rule must never apply to inline checkboxes. */
+.form-grid input[type="checkbox"], dialog input[type="checkbox"] { width:19px; min-width:19px; max-width:19px; flex:0 0 19px; }

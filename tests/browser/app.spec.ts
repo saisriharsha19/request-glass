@@ -542,3 +542,10 @@ test("small phones keep navigation usable and the purchase form within the viewp
   const panel = await page.locator(".account-panel").boundingBox();
   expect(panel!.y).toBeLessThan(150);
 });
+
+test('AI appointment details populate the form and survive into the calendar',async({page})=>{
+ await page.route('**/api/ai/extract',r=>r.fulfill({json:{fields:{item:{value:'Design review',evidence:'Design review'},reminder:{value:'2099-01-31',evidence:'Appointment 2099-01-31'},reminderLabel:{value:'Appointment',evidence:'Appointment 2099-01-31'},notes:{value:'10:30 UTC · Studio · https://example.com/meeting',evidence:'10:30 UTC · Studio · https://example.com/meeting'}}}}));
+ await page.goto('/');await page.locator('#new-purchase').click();await page.locator('#receipt-text').fill('Design review\nAppointment 2099-01-31\n10:30 UTC · Studio · https://example.com/meeting');await page.locator('#ai-fill').click();
+ await expect(page.locator('#reminder')).toHaveValue('2099-01-31');await expect(page.locator('#reminderLabel')).toHaveValue('Appointment');await expect(page.locator('#notes')).toHaveValue(/10:30 UTC/);
+ await page.locator('#save').click();await page.locator('[data-workspace="planner"]').click();await expect(page.locator('.agenda-event')).toContainText('Appointment');await expect(page.locator('.event-notes a')).toHaveAttribute('href','https://example.com/meeting');
+});

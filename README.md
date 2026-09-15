@@ -40,7 +40,7 @@ Server-side environment only; never put keys in browser code or Git:
 
 ```dotenv
 NVIDIA_API_KEY=your-key
-NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
+NVIDIA_MODEL=nvidia/nemotron-3-super-120b-a12b
 NVIDIA_VISION_MODEL=meta/llama-3.2-11b-vision-instruct
 NIM_REQUESTS_PER_HOUR=60
 ```

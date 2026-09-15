@@ -36,7 +36,7 @@
     },
   ],
   "vars": {
-    "NVIDIA_MODEL": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "NVIDIA_MODEL": "nvidia/nemotron-3-super-120b-a12b",
     "NVIDIA_VISION_MODEL": "meta/llama-3.2-11b-vision-instruct",
   },
   "observability": { "enabled": false },

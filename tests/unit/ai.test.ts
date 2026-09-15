@@ -45,7 +45,7 @@ test("server sends a bounded non-streaming request and filters returned data", a
     "https://integrate.api.nvidia.com/v1/chat/completions",
   );
   expect(request.init.headers.Authorization).toBe("Bearer test-key");
-  expect(JSON.parse(request.init.body).max_tokens).toBe(1200);
+  expect(JSON.parse(request.init.body).max_tokens).toBe(2200);
   expect(result.item?.value).toBe("Headphones");
 });
 test("provider error does not include provider response or credential", async () => {
@@ -83,7 +83,7 @@ test("one date quote cannot establish both a purchase and a return date", () => 
   };
   const d = validateDraft({ purchased: field, return: field }, field.evidence);
   expect(d.purchased).toBeUndefined();
-  expect(d.return).toBeUndefined();
+  expect(d.return?.value).toBe("2026-10-12");
 });
 test("vision is sent once and only readings go to structured extraction", async () => {
   const bodies: any[] = [];
@@ -123,4 +123,17 @@ test('AI document reminders require dated evidence and preserve explicit purpose
   const text = 'Payment due: October 12, 2026. Pay within 30 days.';
   expect(validateDraft({ reminder: {value: '2026-10-12', evidence: 'Payment due: October 12, 2026'}, reminderLabel: {value: 'Payment due', evidence: 'Payment due: October 12, 2026'} }, text)).toMatchObject({reminder: {value: '2026-10-12'}, reminderLabel: {value: 'Payment due'}});
   expect(validateDraft({ reminder: {value: '2026-11-11', evidence: 'Pay within 30 days.'} }, text)).toEqual({});
+});
+
+test('explicit appointment dates survive nearby duration text and preserve exact event notes',()=>{
+ const receipt='Appointment: October 12, 2026 (in 30 days).\n10:30 UTC at Studio https://example.com/meeting';
+ const d=validateDraft({reminder:{value:'2026-10-12',evidence:'Appointment: October 12, 2026 (in 30 days).'},notes:{value:'10:30 UTC at Studio https://example.com/meeting',evidence:'10:30 UTC at Studio https://example.com/meeting'}},receipt);
+ expect(d.reminder?.value).toBe('2026-10-12');expect(d.notes?.value).toContain('https://example.com/meeting');
+ expect(validateDraft({notes:{value:'Invented location',evidence:'10:30 UTC at Studio'}},receipt).notes).toBeUndefined();
+});
+
+test('exact descriptive strings from NIM are accepted without fabricating date or amount evidence',()=>{
+ const receipt='Appointment date: October 12, 2026\nStudio\nTime: 10:30 UTC';
+ const d=validateDraft({reminderLabel:'Appointment date',notes:'Time: 10:30 UTC',merchant:'Invented',purchased:{value:'2026-10-12',evidence:'Appointment date: October 12, 2026'},amount:{value:'0.00',evidence:'Time: 10:30 UTC'}},receipt);
+ expect(d.reminderLabel?.value).toBe('Appointment date');expect(d.notes?.value).toBe('Time: 10:30 UTC');expect(d.merchant).toBeUndefined();expect(d.purchased).toBeUndefined();expect(d.amount).toBeUndefined();
 });

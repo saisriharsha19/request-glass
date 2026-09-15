@@ -1,3 +1,4 @@
+import {findLinks} from './links.js';
 // Loaded on demand. Original PDFs never enter browser storage or a network request.
 export async function readPdf(file, { signal, onProgress, recognize }) {
   const pdfjs = await import("/pdf/pdf.min.mjs");
@@ -40,7 +41,8 @@ export async function readPdf(file, { signal, onProgress, recognize }) {
         text += item.str + (item.hasEOL ? "\n" : " ");
         lastY = y;
       }
-      const needsOcr = text.trim().length < 20;
+      const readable=text.replace(/[^\p{L}\p{N}]/gu,'').length;
+      const needsOcr = readable < 40 || (text.match(/\uFFFD/g)||[]).length > text.length * .02;
       {
         onProgress(
           `Preparing PDF page ${number} of ${doc.numPages} on your device…`,
@@ -71,13 +73,16 @@ export async function readPdf(file, { signal, onProgress, recognize }) {
         );
         images.push(canvas.toDataURL("image/jpeg", 0.7));
         if (needsOcr) {
-          text = await recognize(blob);
+          const recognized = await recognize(blob);
+          if(recognized.trim())text=recognized;
           scanned++;
         }
         canvas.width = 0;
         canvas.height = 0;
       }
-      pages.push(text.trim());
+      const annotations=await page.getAnnotations({intent:'display'});
+      const links=findLinks(annotations.map(a=>a.url || '').join(' '));
+      pages.push(`PAGE ${number}\n${text.trim()}${links.length?'\nDocument links: '+links.join('\n'):''}`);
       page.cleanup();
       if (pages.join("\n\n").length > 50000)
         throw new Error(
@@ -86,7 +91,7 @@ export async function readPdf(file, { signal, onProgress, recognize }) {
       // Yield between pages so controls and scrolling remain available.
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
-    if (!pages.some((p) => p))
+    if (!pages.some((p) => p.replace(/^PAGE \d+\s*/,'').trim()))
       throw new Error(
         "No readable text found. Try a clearer PDF or enter the details manually.",
       );

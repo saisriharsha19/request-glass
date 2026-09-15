@@ -145,6 +145,7 @@ const fields = [
   "currency",
   ...Object.keys(kinds),
   "notes",
+  "reminderLabel",
 ];
 let db,
   purchases = [],
@@ -1244,7 +1245,7 @@ function setMethod(method) {
   $(".capture-section").dataset.method = method;
   for (const b of document.querySelectorAll("button[data-method]"))
     b.setAttribute("aria-pressed", String(b.dataset.method === method));
-  if (method === "manual") $("#item").focus();
+  // Input methods change the source panel, never move focus or jump down the form.
 }
 for (const b of document.querySelectorAll("button[data-method]"))
   b.onclick = () => setMethod(b.dataset.method);
@@ -1259,9 +1260,9 @@ for (const label of document.querySelectorAll('label[role="button"]'))
 
 $("#ai-fill").onclick = async () => {
   const text = $("#receipt-text").value.trim();
-  if ((!text && !visionImages.length) || text.length > 20000) {
+  if ((!text && !visionImages.length) || text.length > 50000) {
     $("#ai-status").textContent =
-      "Add a receipt file or paste up to 20,000 characters of text first.";
+      "Add a receipt file or paste up to 50,000 characters of text first.";
     return;
   }
   if (busy) return;
@@ -1324,6 +1325,11 @@ $("#ai-fill").onclick = async () => {
       );
     }
     if (merged.applied.length) $("#ai-evidence").append(evidence);
+    const calendarDates=merged.applied.filter(key=>Object.hasOwn(kinds,key));
+    if(calendarDates.length){
+      const summary=el("p","ai-date-summary",calendarDates.map(key=>`${key === "reminder" ? $("#reminderLabel").value || "Reminder" : kinds[key]}: ${fmtDate(merged.values[key])}`).join(" · "));
+      $("#ai-evidence").prepend(summary);
+    }
     $("#ai-status").textContent = merged.applied.length
       ? `${merged.applied.length} suggestions ready for review. Your manual edits were kept. Temporary upload cleared.`
       : "No new supported details. Your entries were kept. Temporary upload cleared.";

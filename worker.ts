@@ -83,7 +83,7 @@ export default {
         !body ||
         typeof body.text !== "string" ||
         (!body.text.trim() && !body.images?.length) ||
-        body.text.length > 20000 ||
+        body.text.length > 50000 ||
         !validImages(body.images ?? [])
       )
         return json(
@@ -97,7 +97,7 @@ export default {
         const fields = await extractWithNim(
           body.text,
           env.NVIDIA_API_KEY,
-          env.NVIDIA_MODEL || "nvidia/nemotron-3.5-lightning-30b-a3b",
+          env.NVIDIA_MODEL || "nvidia/nemotron-3-super-120b-a12b",
           fetch,
           body.images ?? [],
           env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct",

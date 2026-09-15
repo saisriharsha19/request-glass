@@ -92,7 +92,7 @@ Bun.serve({
         !body ||
         typeof body.text !== "string" ||
         (!body.text.trim() && !body.images?.length) ||
-        body.text.length > 20000 ||
+        body.text.length > 50000 ||
         !validImages(body.images ?? [])
       )
         return json(
@@ -115,7 +115,7 @@ Bun.serve({
         const fields = await extractWithNim(
           body.text,
           key,
-          process.env.NVIDIA_MODEL || "nvidia/nemotron-3.5-lightning-30b-a3b",
+          process.env.NVIDIA_MODEL || "nvidia/nemotron-3-super-120b-a12b",
           fetch,
           body.images ?? [],
           process.env.NVIDIA_VISION_MODEL ||
