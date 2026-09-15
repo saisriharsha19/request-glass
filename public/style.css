@@ -2778,7 +2778,7 @@ input:not([type="checkbox"]):focus-visible, textarea:focus-visible, select:focus
   #sidebar-toggle { width:44px; }
   .sidebar-collapsed .workspace-tabs, .sidebar-collapsed .sidebar-bottom { display:none; }
 }
-.sidebar-collapsed #sidebar-toggle svg path { transform:scaleX(-1); transform-origin:14px 12px; }
+.sidebar-collapsed #sidebar-toggle svg path { transform:scaleX(-1); transform-origin:12px 12px; }
 @media(min-width:721px) and (max-width:1150px) {
   .sidebar-heading .brand { font-size:18px; gap:6px; }
 }
