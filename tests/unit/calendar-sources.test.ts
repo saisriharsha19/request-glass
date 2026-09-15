@@ -13,7 +13,7 @@ test('incoming sources sync snapshots, keep data on failure, deduplicate and iso
  expect((await call('')).status).toBe(401);
  const body={name:'Work',url:'https://outlook.office365.com/owa/calendar/example/calendar.ics'};
  const added=await (await call(alice,'POST','',body)).json();
- expect(added.sources).toHaveLength(1);expect(added.sources[0].events[0].title).toBe('Original meeting');expect(added.sources[0].url).toBeUndefined();
+ expect(added.sources).toHaveLength(1);expect(added.sources[0].eventCount).toBe(1);expect(added.sources[0].events).toBeUndefined();expect(added.sources[0].url).toBeUndefined();
  const id=added.sources[0].id;
  const stale=(await sourceApi(new Request(origin+"/api/calendar/sources/"+id,{method:"DELETE",headers:{Cookie:bob,Origin:origin,"Content-Type":"application/json","X-Account-ID":added.userId},body:"{}"}),env,fake))!;
  expect(stale.status).toBe(409);
@@ -21,9 +21,22 @@ test('incoming sources sync snapshots, keep data on failure, deduplicate and iso
  await call(bob,'DELETE','/'+id);expect((await (await call(alice)).json()).sources).toHaveLength(1);
  await call(alice,'POST','',body);expect((await (await call(alice)).json()).sources).toHaveLength(1);
  title='Updated meeting';await env.DB.prepare('UPDATE calendar_sources SET last_attempt=0 WHERE id=?').bind(id).run();
- const updated=await (await call(alice,'POST','/refresh')).json();expect(updated.sources[0].events[0].title).toBe(title);
+ const updated=await (await call(alice,'POST','/refresh')).json();expect(updated.sources[0].eventCount).toBe(1);
  await env.DB.prepare('UPDATE calendar_sources SET last_attempt=0 WHERE id=?').bind(id).run();
  await refreshSource(env.DB,{id,url:body.url},true,(async()=>{throw new Error('network failure with secret URL');}));
- const failed=await (await call(alice)).json();expect(failed.sources[0].events[0].title).toBe(title);expect(failed.sources[0].error).not.toContain('secret URL');
+ const failed=await (await call(alice)).json();expect(failed.sources[0].eventCount).toBe(1);expect(failed.sources[0].error).not.toContain('secret URL');
+ const from=new Date().toISOString().slice(0,10),to=new Date(Date.now()+86400000).toISOString().slice(0,10);
+ async function page(cookie:string,query:string){return (await sourceApi(new Request(origin+'/api/calendar/events?'+query,{headers:{Cookie:cookie}}),env))!;}
+ const query=`from=${from}&to=${to}`;
+ expect((await (await page(alice,query)).json()).events[0].title).toBe(title);
+ expect((await (await page(bob,query)).json()).events).toHaveLength(0);
+ expect((await page(alice,'from=bad&to=bad')).status).toBe(400);
+ expect((await page(alice,query+'&after=bad')).status).toBe(400);
+ const many=Array.from({length:205},(_,i)=>({id:String(i).padStart(4,'0'),title:'Event '+i,start:from+'T12:00:00Z',end:from+'T13:00:00Z'}));
+ await env.DB.prepare('UPDATE calendar_sources SET events=? WHERE id=?').bind(JSON.stringify(many),id).run();
+ const first=await (await page(alice,query)).json();expect(first.events).toHaveLength(100);
+ const second=await (await page(alice,query+'&after='+first.next)).json();expect(second.events).toHaveLength(100);
+ const third=await (await page(alice,query+'&after='+second.next)).json();expect(third.events).toHaveLength(5);expect(third.next).toBeNull();
+ expect(new Set([...first.events,...second.events,...third.events].map(e=>e.id)).size).toBe(205);
  await call(alice,'DELETE','/'+id);expect((await (await call(alice)).json()).sources).toHaveLength(0);
 });

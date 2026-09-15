@@ -88,3 +88,5 @@ The illustrated folder reacts only to nearby pointers and gives a brief double b
 ## Tuckday connections and recovery
 
 Calendar → Connect calendar brings Google, Outlook and iCloud ICS feeds into Tuckday, including recurring and timed events. Add one link per calendar. The secondary sharing option creates an outgoing, revocable subscription URL. Providers fetch updates on their own schedules; this is separate from two-way OAuth access. Signed-in sidebar status and server-confirmed sync counts distinguish account records from guest records. A failed startup connection now recovers automatically or through Retry connection. The receiving device can reconnect after the writer closes. AI assistance can also extract explicitly dated bill/renewal reminders with evidence. [Deployment and connection details](docs/tuckday-release.md).
+
+Connected calendar events load by visible month with explicit Load more pagination. Meeting links are clickable, ongoing meetings are marked Now, and ended events move to Past & completed using device-local time. Use Jump to month for other dates.

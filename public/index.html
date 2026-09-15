@@ -187,7 +187,7 @@
                 /></label>
               </div>
             </div>
-            <p id="connected-calendars-summary" class="fine-print"></p><label class="calendar-source-picker">Show calendar<select id="calendar-source-filter"><option value="all">All calendars</option><option value="tuckday">Tuckday reminders</option></select></label><div class="planner-layout">
+            <label class="calendar-month-picker">Jump to month<input type="month" id="month-jump"></label><p id="calendar-timezone" class="fine-print"></p><p id="connected-calendars-summary" class="fine-print"></p><label class="calendar-source-picker">Show calendar<select id="calendar-source-filter"><option value="all">All calendars</option><option value="tuckday">Tuckday reminders</option></select></label><div class="planner-layout">
               <section class="month-card" aria-label="Month calendar">
                 <div class="month-toolbar">
                   <button
@@ -223,7 +223,7 @@
                       <option value="upcoming">Upcoming</option>
                       <option value="overdue">Overdue</option>
                       <option value="all">All open</option>
-                      <option value="completed">Completed</option>
+                      <option value="completed">Past &amp; completed</option>
                     </select></label
                   >
                 </div>
@@ -231,7 +231,7 @@
                   Show all dates
                 </button>
                 <div id="agenda-list"></div>
-                <p id="agenda-limit" class="small muted"></p>
+                <p id="agenda-limit" class="small muted" role="status"></p><button id="agenda-more" class="secondary" hidden>Load more</button>
               </section>
             </div>
           </section>

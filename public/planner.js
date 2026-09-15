@@ -24,6 +24,7 @@ function button(text, action, className = "secondary") {
 }
 export function createPlanner({
   getPurchases,
+  setCalendarRange, calendarPage, loadCalendarPage,
   getExternalEvents = () => [],
   getSources = () => [],
   save,
@@ -36,7 +37,7 @@ export function createPlanner({
   let month = today().slice(0, 7),
     selected = "",
     filter = "upcoming",
-    imported = [];
+    imported = [], limit = 50;
   const apply = async (p, change) => {
     try {
       await save({ ...p, ...change }, p._version || 0);
@@ -51,7 +52,7 @@ export function createPlanner({
       return;
     const purchases = getPurchases();
     const connected = getSources();
-    $("#connected-calendars-summary").textContent = connected.length ? `${connected.length} connected calendar${connected.length === 1 ? "" : "s"} · ${getExternalEvents().length} calendar events${connected.some(source => source.error) ? " · A calendar needs attention; open Connect calendar." : ""}` : "Connect Google, Outlook or iCloud calendars to bring their events into this view.";
+    $("#connected-calendars-summary").textContent = connected.length ? `${connected.length} connected calendar${connected.length === 1 ? "" : "s"} · ${getExternalEvents().length} events loaded around this month${connected.some(source => source.error) ? " · A calendar needs attention; open Connect calendar." : ""}` : "Connect Google, Outlook or iCloud calendars to bring their events into this view.";
     const picker = $("#calendar-source-filter"), chosen = picker.value;
     picker.replaceChildren(new Option("All calendars", "all"), new Option("Tuckday reminders", "tuckday"), ...getSources().map(source => new Option(source.name, source.id)));
     picker.value = [...picker.options].some(option => option.value === chosen) ? chosen : "all";
@@ -59,6 +60,11 @@ export function createPlanner({
     const start = new Date(month + "-01T12:00:00"),
       first = new Date(start);
     first.setDate(1 - ((start.getDay() + 6) % 7));
+    const isoDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const from=new Date(first),to=new Date(first);from.setDate(from.getDate()-1);to.setDate(to.getDate()+43);
+    if(!$("#planner-workspace").hidden)setCalendarRange(isoDay(from),isoDay(to));
+    $("#month-jump").value=month;
+    const paging=calendarPage();
     $("#month-title").textContent = start.toLocaleDateString(undefined, {
       month: "long",
       year: "numeric",
@@ -94,9 +100,10 @@ export function createPlanner({
     $("#clear-day").hidden = !selected;
     $("#agenda-title").textContent = selected
       ? `On ${new Date(selected + "T12:00:00").toLocaleDateString(undefined, { dateStyle: "long" })}`
-      : "Your agenda";
+      : "Agenda · connected events for this month";
     const visible = events.filter(
       (e) =>
+        (!e.external || selected || (e.date.slice(0,7)<=month && (e.endDate || e.date).slice(0,7)>=month)) &&
         (!selected || (e.date <= selected && (e.endDate || e.date) >= selected)) &&
         (filter === "completed"
           ? e.completed
@@ -107,12 +114,13 @@ export function createPlanner({
                 : daysAway(e.endDate || e.date) >= 0))),
     );
     const list = $("#agenda-list");
+    const openDetails=new Set([...list.querySelectorAll("details[open]")].map(e=>e.dataset.event));
     list.replaceChildren();
     if (!visible.length) {
       const empty = node("div", "planner-empty");
       const cleared =
         events.length > 0 &&
-        events.every((event) => event.completed) &&
+        events.every((event) => !event.external && event.completed) &&
         filter !== "completed";
       if (cleared) {
         const stamp = node("div", "all-clear-stamp");
@@ -135,7 +143,7 @@ export function createPlanner({
       );
       list.append(empty);
     }
-    for (const event of visible.slice(0, 100)) {
+    for (const event of visible.slice(0, limit)) {
       const row = node("article", "agenda-event"),
         head = node("div", "agenda-event-head");
       head.append(
@@ -154,13 +162,21 @@ export function createPlanner({
         node(
           "p",
           "",
-          `${event.label}${event.completed ? " · Completed" : !event.external && daysAway(event.date) < 0 ? " · Overdue" : ""}`,
+          `${event.label}${event.completed ? (event.external ? " · Ended" : " · Completed") : !event.external && daysAway(event.date) < 0 ? " · Overdue" : ""}`,
         ),
       );
       if (event.external) {
         row.classList.add("external-event");
+        row.dataset.state = event.ongoing ? "ongoing" : event.completed ? "past" : "upcoming";
         row.append(node("span", "source-badge", event.sourceName));
         if(event.location) row.append(node("p", "", event.location));
+        const links=node("div","event-links");
+        for(const value of (event.links || [])) {try{const url=new URL(value);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)continue;
+          const link=node('a','secondary',/(^|\.)teams\.microsoft\.com$/.test(url.hostname)?'Join Teams meeting':url.hostname==='meet.google.com'?'Join Google Meet':/(^|\.)zoom.us$/.test(url.hostname)?'Join Zoom meeting':url.hostname);
+          link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';links.append(link);
+        }catch{}}
+        if(links.childElementCount)row.append(links);
+        if(event.description){const details=node('details','event-details');details.dataset.event=event.sourceId+':'+event.key;details.open=openDetails.has(details.dataset.event);details.append(node('summary','','Event details'),node('p','',event.description));row.append(details);}
         row.append(node("p", "fine-print", "From your connected calendar · Edit in its original app"));
         list.append(row);
         continue;
@@ -217,10 +233,11 @@ export function createPlanner({
       row.append(actions);
       list.append(row);
     }
-    $("#agenda-limit").textContent =
-      visible.length > 100
-        ? `Showing 100 of ${visible.length}. Select a day to narrow the list.`
-        : `${visible.length} event${visible.length === 1 ? "" : "s"} across the selected calendars.`;
+    $("#agenda-limit").textContent = paging.error || (paging.busy ? 'Loading this calendar range…' : `${Math.min(limit,visible.length)} events shown${paging.next ? ' · More connected events available; day counts reflect loaded events' : ''}. Tuckday reminders include all dates.`);
+    $("#agenda-more").hidden=!(visible.length>limit || paging.next || paging.error);
+    $("#agenda-more").disabled=paging.busy;
+    $("#agenda-more").textContent=paging.error?'Retry loading':'Load more';
+    $("#agenda-more").onclick=()=>{limit+=50;if(paging.next||paging.error)void loadCalendarPage();render();};
     const totals = $("#spending-summary");
     totals.replaceChildren();
     const groups = spending(purchases);
@@ -266,6 +283,7 @@ export function createPlanner({
       totals.append(card);
     }
   }
+  $("#month-jump").onchange=e=>{if(/^\d{4}-\d{2}$/.test(e.target.value)){month=e.target.value;selected="";limit=50;render();}};
   $("#month-prev").onclick = () => {
     const d = new Date(month + "-01T12:00:00");
     d.setMonth(d.getMonth() - 1);
@@ -362,5 +380,7 @@ export function createPlanner({
     }
   };
   $("#calendar-source-filter").onchange = render;
+  setInterval(() => { if(!document.hidden && !$("#planner-workspace").hidden) render(); }, 30000);
+  $("#calendar-timezone").textContent = `Times shown in ${Intl.DateTimeFormat().resolvedOptions().timeZone.replaceAll("_", " ")}. Past events move out of Upcoming automatically.`;
   return { render };
 }

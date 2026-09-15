@@ -22,7 +22,7 @@ export async function refreshDueCalendars(env:AuthEnv) {
 }
 export async function sourceApi(request:Request,env:AuthEnv,fetcher: (input: string, init?: RequestInit) => Promise<Response>=fetch):Promise<Response|null> {
   const path=new URL(request.url).pathname;
-  if(!path.startsWith('/api/calendar/sources'))return null;
+  if(!path.startsWith('/api/calendar/sources') && path!=='/api/calendar/events')return null;
   if(!env.DB)return apiJson({error:'Sign in on the current app to connect calendars.'},503);
   const db=env.DB;
   if(!['GET','POST','DELETE'].includes(request.method))return apiJson({error:'Method not allowed'},405);
@@ -30,6 +30,16 @@ export async function sourceApi(request:Request,env:AuthEnv,fetcher: (input: str
   const user=await accountIdentity(request,env);if(!user)return apiJson({error:'Sign in to bring your calendars into Tuckday.'},401);
   if(request.headers.get('x-account-id') && request.headers.get('x-account-id') !== user.id) return apiJson({error:'The signed-in account changed. Reopen Connect calendar before making changes.'},409);
   try {
+    if(path==='/api/calendar/events' && request.method==='GET') {
+      const params=new URL(request.url).searchParams, from=params.get('from')||'', to=params.get('to')||'';
+      const valid=(date:string)=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&!Number.isNaN(Date.parse(date))&&new Date(date).toISOString().slice(0,10)===date;
+      if(!valid(from)||!valid(to)||to<=from||Date.parse(to)-Date.parse(from)>64*86400000) return apiJson({error:'Choose a calendar range of up to 64 days.'},400);
+      let cursor=['','',''];
+      if(params.has('after')) {try{cursor=JSON.parse(Buffer.from(params.get('after')!,'base64url').toString());if(!Array.isArray(cursor)||cursor.length!==3||cursor.some(value=>typeof value!=='string'||value.length>2000))throw new Error();}catch{return apiJson({error:'Reload this calendar page.'},400);}}
+      const rows=await db.prepare(`WITH matches AS (SELECT calendar_sources.id AS source_id,name AS source_name,json_each.value AS event,json_extract(json_each.value,'$.start') AS start,json_extract(json_each.value,'$.end') AS end,json_extract(json_each.value,'$.id') AS event_id FROM calendar_sources,json_each(calendar_sources.events) WHERE user_id=?) SELECT * FROM matches WHERE end>=? AND start<? AND (start,source_id,event_id)>(?,?,?) ORDER BY start,source_id,event_id LIMIT 101`).bind(user.id,from,to,...cursor).all<any>();
+      const page=rows.results.slice(0,100),last=page.at(-1);
+      return apiJson({userId:user.id,events:page.map(row=>({...JSON.parse(row.event),sourceId:row.source_id,sourceName:row.source_name})),next:rows.results.length>100?Buffer.from(JSON.stringify([last.start,last.source_id,last.event_id])).toString('base64url'):null});
+    }
     if(path==='/api/calendar/sources'&&request.method==='POST') {
       const body=await readBody(request,4096);let url;
       try{url=calendarURL(body.url);}catch(error){return apiJson({error:error instanceof Error?error.message:'Use a valid ICS link.'},400);}
@@ -47,7 +57,7 @@ export async function sourceApi(request:Request,env:AuthEnv,fetcher: (input: str
       const id=path.slice('/api/calendar/sources/'.length);
       await db.prepare('DELETE FROM calendar_sources WHERE id=? AND user_id=?').bind(id,user.id).run();
     } else if(path!=='/api/calendar/sources'||request.method!=='GET') return apiJson({error:'Not found'},404);
-    const sources=await db.prepare('SELECT id,name,events,last_checked,last_attempt,error FROM calendar_sources WHERE user_id=? ORDER BY name,id').bind(user.id).all<any>();
-    return apiJson({userId:user.id,sources:sources.results.map(row=>({...row,events:JSON.parse(row.events)}))});
+    const sources=await db.prepare('SELECT id,name,json_array_length(events) AS eventCount,last_checked,last_attempt,error FROM calendar_sources WHERE user_id=? ORDER BY name,id').bind(user.id).all<any>();
+    return apiJson({userId:user.id,sources:sources.results});
   } catch {return apiJson({error:'Could not load connected calendars. Please retry.'},503);}
 }

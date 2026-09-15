@@ -1,4 +1,4 @@
-import { connectedEvents, connectedSources } from "/calendar-sources.js";
+import { connectedEvents, connectedSources, setCalendarRange, calendarPage, loadCalendarPage } from "/calendar-sources.js";
 import { celebrate } from "/celebration.js";
 import { icon } from "/icons.js";
 import { categories, templates, itemEvents } from "/organize.js";
@@ -64,7 +64,7 @@ async function afterWrite() {
 }
 let calendarAccountId;
 async function updateAccountUI() {
-  if (calendarAccountId !== sync.user?.id) { calendarAccountId = sync.user?.id; window.dispatchEvent(new Event("tuckday-account-changed")); }
+  if (calendarAccountId !== sync.user?.id) { calendarAccountId = sync.user?.id; window.dispatchEvent(new CustomEvent("tuckday-account-changed", {detail: {userId: calendarAccountId}})); }
   $("#sidebar-sync-status").textContent = sync.user
     ? `Signed in as @${sync.user.username}. Saved records stay in your account, even when other devices are offline.`
     : "Guest records stay on this device. Sign in to save them to your account.";
@@ -1092,6 +1092,7 @@ $("#planner-new").onclick = async () => {
   $("#reminderLabel").value = "Reminder";
 };
 planner = createPlanner({
+  setCalendarRange, calendarPage, loadCalendarPage,
   getExternalEvents: () => connectedEvents(sync.user?.id),
   getSources: () => connectedSources(sync.user?.id),
   getPurchases: () => purchases,

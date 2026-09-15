@@ -2635,3 +2635,34 @@ dialog::backdrop {
 .calendar-source-picker select { min-width: 0; max-width: 100%; }
 .source-badge { display: inline-block; color: #49617a; background: #e7eef2; border-radius: 5px; padding: 4px 8px; font-size: 11px; }
 .external-event { border-left: 3px solid #98aeba; padding-left: 12px; }
+.external-event[data-state="ongoing"] { border-left-color: var(--green); background: #f1f4e9; padding-right: 12px; }
+.external-event[data-state="ongoing"] .source-badge { color: #405c37; background: #dfe8d3; }
+
+/* Keep content within its own card, including long calendar titles and URLs. */
+.agenda-event, .agenda-event-head, .planner-layout > *, .connected-source, dialog form, .purchase-card { min-width: 0; }
+.agenda-event h3, .agenda-event p, .connected-source, .purchase-card h3, dialog p, dialog label { overflow-wrap: anywhere; }
+.event-links { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.event-links a { max-width:100%; overflow-wrap:anywhere; white-space:normal; }
+.event-details { margin:12px 0; }
+.event-details summary { cursor:pointer; font-weight:600; padding:8px 0; }
+.event-details p { white-space:pre-wrap; line-height:1.55; }
+.calendar-month-picker { display:block; max-width:240px; margin:12px 0; }
+@media(max-width:600px) {
+  .agenda-event h3, .purchase-card h3 { font-size:clamp(1rem,4.5vw,1.2rem); line-height:1.35; }
+  .agenda-event-head { flex-wrap:wrap; gap:8px; }
+  .agenda-event-head h3 { flex:1 1 160px; }
+  .agenda-event p, .connected-source p, dialog p { font-size:.9375rem; line-height:1.5; }
+  dialog h2, .workspace-head h2 { font-size:clamp(1.25rem,6vw,1.8rem); overflow-wrap:anywhere; }
+  input, select, textarea { min-width:0; max-width:100%; font-size:16px; }
+  .agenda-actions > *, .event-links > * { white-space:normal; text-align:center; }
+}
+
+@media(max-width:600px) {
+  .agenda-event-head { display:flex; flex-direction:column; align-items:flex-start; }
+  .agenda-event-head h3 { flex:initial; width:100%; }
+  .source-badge, .stat-label, .card-heading, .account-panel, .insight-card, .modal-content { min-width:0; overflow-wrap:anywhere; }
+  .stat strong, .insight-card h3 { font-size:clamp(1.25rem,6vw,2rem); overflow-wrap:anywhere; }
+  .account-panel h2 { font-size:clamp(1.4rem,7vw,1.875rem); }
+  .account-intro h1 { font-size:clamp(1.75rem,8vw,2.375rem); }
+  .source-badge { max-width:100%; }
+}

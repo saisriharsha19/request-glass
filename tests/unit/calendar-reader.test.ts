@@ -66,3 +66,16 @@ test('provider redirects are handled manually and never followed to an untrusted
  await expect(fetchCalendar('https://calendar.google.com/calendar/ical/example',async (_url,init)=>{calls++;expect(init?.redirect).toBe("manual");return new Response(null,{status:302,headers:{Location:'http://127.0.0.1/private'}})})).rejects.toThrow('redirected');
  expect(calls).toBe(1);
 });
+test('meeting links come from URL, descriptions and HTML without retaining active markup',()=>{
+ const events=readCalendar(wrap(`BEGIN:VEVENT
+UID:links
+DTSTART:20260915T090000Z
+DTEND:20260915T100000Z
+SUMMARY:Meeting
+URL:https://meet.google.com/abc-defg-hij
+DESCRIPTION:Join https://zoom.us/j/123. <script>bad</script>
+X-ALT-DESC:<a href="https://teams.microsoft.com/l/meetup?a=1&amp;b=2">Join</a>
+END:VEVENT`),now);
+ expect(events[0].links).toEqual(['https://meet.google.com/abc-defg-hij','https://zoom.us/j/123','https://teams.microsoft.com/l/meetup?a=1&b=2']);
+ expect(events[0].description).not.toContain('<script>');
+});
