@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+test('incoming calendars are the default connection flow and their timed events join the agenda',async({page})=>{
+ let connected=false;
+ const user={id:'calendar-owner',username:'alex',name:'Alex'};
+ await page.route('**/api/auth/config',r=>r.fulfill({json:{configured:true}}));
+ await page.route('**/api/auth/session',r=>r.fulfill({json:{user}}));
+ await page.route('**/api/purchases',r=>r.fulfill({json:{purchases:[],revision:0,next:null}}));
+ await page.route('**/api/calendar/sources**',r=>{if(r.request().method()==='POST')connected=true;if(r.request().method()==='DELETE')connected=false;return r.fulfill({json:{userId:user.id,sources:connected?[{id:'work',name:'Work calendar',last_checked:Date.now(),error:null,events:[{id:'meeting',title:'Design review',start:new Date().toISOString(),end:new Date(Date.now()+3600000).toISOString(),allDay:false,floating:false,location:'Studio'}]}]:[]}})});
+ await page.setViewportSize({width:390,height:844});await page.goto('/');
+ await page.locator('[data-workspace="planner"]').click();await page.locator('#calendar-connect').click();
+ await expect(page.getByRole('heading',{name:'Bring your calendars in'})).toBeVisible();
+ await page.locator('#incoming-name').fill('Work calendar');await page.locator('#incoming-url').fill('https://outlook.office365.com/owa/calendar/example/calendar.ics');await page.getByRole('button',{name:'Connect this calendar'}).click();
+ await expect(page.locator('#connected-source-list')).toContainText('Work calendar');
+ await page.screenshot({path:'/tmp/tuckday-incoming-phone.png'});
+ await page.locator('#incoming-close').click();await expect(page.locator('.external-event')).toContainText('Design review');await expect(page.locator('.external-event')).toContainText('Studio');
+ await expect(page.locator('.external-event button')).toHaveCount(0);
+ await page.locator('#calendar-source-filter').selectOption('tuckday');await expect(page.locator('.external-event')).toHaveCount(0);
+ await page.locator('#calendar-source-filter').selectOption('work');await expect(page.locator('.external-event')).toHaveCount(1);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

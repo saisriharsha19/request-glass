@@ -1,3 +1,4 @@
+import { connectedEvents, connectedSources } from "/calendar-sources.js";
 import { celebrate } from "/celebration.js";
 import { icon } from "/icons.js";
 import { categories, templates, itemEvents } from "/organize.js";
@@ -61,7 +62,9 @@ async function afterWrite() {
     );
   } else await reload();
 }
+let calendarAccountId;
 async function updateAccountUI() {
+  if (calendarAccountId !== sync.user?.id) { calendarAccountId = sync.user?.id; window.dispatchEvent(new Event("tuckday-account-changed")); }
   $("#sidebar-sync-status").textContent = sync.user
     ? `Signed in as @${sync.user.username}. Saved records stay in your account, even when other devices are offline.`
     : "Guest records stay on this device. Sign in to save them to your account.";
@@ -1079,14 +1082,18 @@ function selectWorkspace(selected) {
   $(".intro").hidden = selected !== "items";
   planner?.render();
 }
-for (const button of document.querySelectorAll("[data-workspace]"))
+for (const button of document.querySelectorAll("[data-workspace]")) {
   button.onclick = () => selectWorkspace(button.dataset.workspace);
+  button.disabled = false;
+}
 $("#planner-new").onclick = async () => {
   await openPurchase();
   setMethod("manual");
   $("#reminderLabel").value = "Reminder";
 };
 planner = createPlanner({
+  getExternalEvents: () => connectedEvents(sync.user?.id),
+  getSources: () => connectedSources(sync.user?.id),
   getPurchases: () => purchases,
   edit: openPurchase,
   download,
@@ -1460,3 +1467,5 @@ async function prepareVisionSheet(images) {
     );
   return [result];
 }
+
+window.addEventListener("tuckday-calendars-changed", () => planner?.render());

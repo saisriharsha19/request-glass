@@ -10,13 +10,13 @@ test('calendar connection is explicit, works on mobile, keeps link on reload and
   await page.locator('#recovery-saved').check();await page.locator('#recovery-done').click();
   await page.getByRole('link',{name:'Go to my purchases'}).click();
   await expect(page.locator('#sidebar-sync-status')).toContainText('Signed in as');
-  await page.locator('[data-workspace="planner"]').click();await page.locator('#calendar-connect').click();
+  await page.locator('[data-workspace="planner"]').click();await page.locator('#calendar-connect').click();await page.getByText('Send Tuckday reminders to another app',{exact:true}).click();await page.locator('#calendar-share').click();
   await expect(page.locator('#calendar-connect-consent')).toBeVisible();
   await page.locator('#calendar-enable').click();await expect(page.locator('#calendar-feed-url')).toHaveValue(/\/api\/calendar\/feed\/[a-f0-9]{64}\.ics/);
   const url = await page.locator('#calendar-feed-url').inputValue();
   expect((await page.request.get(url)).status()).toBe(200);
   expect(await page.evaluate(()=>document.querySelector('#calendar-connect-dialog')!.scrollWidth <= innerWidth)).toBe(true);
-  await page.reload();await page.locator('[data-workspace="planner"]').click();await page.locator('#calendar-connect').click();
+  await page.reload();await page.locator('[data-workspace="planner"]').click();await page.locator('#calendar-connect').click();await page.getByText('Send Tuckday reminders to another app',{exact:true}).click();await page.locator('#calendar-share').click();
   await expect(page.locator('#calendar-feed-url')).toHaveValue(url);
   await page.locator('#calendar-disconnect').click();await expect(page.locator('#calendar-connected')).toBeHidden();
   expect((await page.request.get(url)).status()).toBe(404);

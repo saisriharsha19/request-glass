@@ -26,13 +26,13 @@ async function connection(method = 'GET') {
     for (const id of ['calendar-enable', 'calendar-disconnect']) $('#'+id).disabled = false;
   }
 }
-$('#calendar-connect').onclick = () => {
+window.addEventListener('tuckday-share-calendar', () => {
   $('#calendar-connected').hidden = true;
   $('#calendar-connect-consent').hidden = true;
   $('#calendar-feed-url').value = '';
   dialog.showModal();
   void connection();
-};
+});
 $('#calendar-connect-close').onclick = () => dialog.close();
 $('#calendar-enable').onclick = () => connection('POST');
 $('#calendar-disconnect').onclick = () => connection('DELETE');

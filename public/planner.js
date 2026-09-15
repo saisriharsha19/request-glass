@@ -24,6 +24,8 @@ function button(text, action, className = "secondary") {
 }
 export function createPlanner({
   getPurchases,
+  getExternalEvents = () => [],
+  getSources = () => [],
   save,
   edit,
   exportCalendar,
@@ -47,8 +49,13 @@ export function createPlanner({
   function render() {
     if ($("#planner-workspace").hidden && $("#insights-workspace").hidden)
       return;
-    const purchases = getPurchases(),
-      events = itemEvents(purchases, { includeCompleted: true });
+    const purchases = getPurchases();
+    const connected = getSources();
+    $("#connected-calendars-summary").textContent = connected.length ? `${connected.length} connected calendar${connected.length === 1 ? "" : "s"} · ${getExternalEvents().length} calendar events${connected.some(source => source.error) ? " · A calendar needs attention; open Connect calendar." : ""}` : "Connect Google, Outlook or iCloud calendars to bring their events into this view.";
+    const picker = $("#calendar-source-filter"), chosen = picker.value;
+    picker.replaceChildren(new Option("All calendars", "all"), new Option("Tuckday reminders", "tuckday"), ...getSources().map(source => new Option(source.name, source.id)));
+    picker.value = [...picker.options].some(option => option.value === chosen) ? chosen : "all";
+    const events = [...itemEvents(purchases, { includeCompleted: true }), ...getExternalEvents()].filter(event => picker.value === "all" || (picker.value === "tuckday" ? !event.external : event.sourceId === picker.value)).sort((a,b) => a.date.localeCompare(b.date) || (a.sort || a.date).localeCompare(b.sort || b.date));
     const start = new Date(month + "-01T12:00:00"),
       first = new Date(start);
     first.setDate(1 - ((start.getDay() + 6) % 7));
@@ -62,7 +69,7 @@ export function createPlanner({
       const date = new Date(first);
       date.setDate(first.getDate() + i);
       const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const count = events.filter((e) => !e.completed && e.date === iso).length;
+      const count = events.filter((e) => !e.completed && e.date <= iso && (e.endDate || e.date) >= iso).length;
       const day = button(
         "",
         () => {
@@ -90,14 +97,14 @@ export function createPlanner({
       : "Your agenda";
     const visible = events.filter(
       (e) =>
-        (!selected || e.date === selected) &&
+        (!selected || (e.date <= selected && (e.endDate || e.date) >= selected)) &&
         (filter === "completed"
           ? e.completed
           : !e.completed &&
             (filter === "all" ||
               (filter === "overdue"
-                ? daysAway(e.date) < 0
-                : daysAway(e.date) >= 0))),
+                ? daysAway(e.endDate || e.date) < 0
+                : daysAway(e.endDate || e.date) >= 0))),
     );
     const list = $("#agenda-list");
     list.replaceChildren();
@@ -147,9 +154,17 @@ export function createPlanner({
         node(
           "p",
           "",
-          `${event.label}${event.completed ? " · Completed" : daysAway(event.date) < 0 ? " · Overdue" : ""}`,
+          `${event.label}${event.completed ? " · Completed" : !event.external && daysAway(event.date) < 0 ? " · Overdue" : ""}`,
         ),
       );
+      if (event.external) {
+        row.classList.add("external-event");
+        row.append(node("span", "source-badge", event.sourceName));
+        if(event.location) row.append(node("p", "", event.location));
+        row.append(node("p", "fine-print", "From your connected calendar · Edit in its original app"));
+        list.append(row);
+        continue;
+      }
       const actions = node("div", "agenda-actions");
       actions.append(
         button("Edit", () => edit(event.p)),
@@ -205,7 +220,7 @@ export function createPlanner({
     $("#agenda-limit").textContent =
       visible.length > 100
         ? `Showing 100 of ${visible.length}. Select a day to narrow the list.`
-        : `${visible.length} reminder${visible.length === 1 ? "" : "s"}. Calendar links open a draft for you to confirm.`;
+        : `${visible.length} event${visible.length === 1 ? "" : "s"} across the selected calendars.`;
     const totals = $("#spending-summary");
     totals.replaceChildren();
     const groups = spending(purchases);
@@ -346,5 +361,6 @@ export function createPlanner({
       $("#confirm-calendar-import").disabled = false;
     }
   };
+  $("#calendar-source-filter").onchange = render;
   return { render };
 }

@@ -71,7 +71,7 @@ Tests cover storage/migration, receipt/PDF extraction, no new file persistence, 
 
 ## Account linkage and Cloudflare migration
 
-The Cloudflare deployment and account setup are documented in [docs/cloudflare-launch.md](docs/cloudflare-launch.md). Open https://return-radar.return-radar.workers.dev. Accounts use native username/password login and one D1 database, with no external identity service. Save the recovery key shown at registration; it replaces email-based password recovery. Previous Google/Clerk users should create a native account and import device purchases once. Cloudflare AI assistance requires sign-in.
+The Cloudflare deployment and account setup are documented in [docs/cloudflare-launch.md](docs/cloudflare-launch.md). Open https://tuckday.pages.dev. Accounts use native username/password login and one D1 database, with no external identity service. Save the recovery key shown at registration; it replaces email-based password recovery. Previous Google/Clerk users should create a native account and import device purchases once. Cloudflare AI assistance requires sign-in.
 
 ## Calendar, documents and organization
 
@@ -87,4 +87,4 @@ The illustrated folder reacts only to nearby pointers and gives a brief double b
 
 ## Tuckday connections and recovery
 
-Calendar → Connect calendar creates a revocable, read-only subscription URL for Google, Outlook and Apple Calendar. Providers fetch updates on their own schedules; this is separate from two-way OAuth access. Signed-in sidebar status and server-confirmed sync counts distinguish account records from guest records. A failed startup connection now recovers automatically or through Retry connection. The receiving device can reconnect after the writer closes. AI assistance can also extract explicitly dated bill/renewal reminders with evidence. [Deployment and connection details](docs/tuckday-release.md).
+Calendar → Connect calendar brings Google, Outlook and iCloud ICS feeds into Tuckday, including recurring and timed events. Add one link per calendar. The secondary sharing option creates an outgoing, revocable subscription URL. Providers fetch updates on their own schedules; this is separate from two-way OAuth access. Signed-in sidebar status and server-confirmed sync counts distinguish account records from guest records. A failed startup connection now recovers automatically or through Retry connection. The receiving device can reconnect after the writer closes. AI assistance can also extract explicitly dated bill/renewal reminders with evidence. [Deployment and connection details](docs/tuckday-release.md).

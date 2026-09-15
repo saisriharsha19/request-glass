@@ -1,3 +1,4 @@
+import { sourceApi, refreshDueCalendars } from "./calendar-sources";
 import { calendarApi } from "./calendar-api";
 import { extractWithNim, validImages } from "./ai";
 import { accountIdentity, securityHeaders, type AuthEnv } from "./auth";
@@ -20,6 +21,7 @@ const json = (body: unknown, status = 200) =>
     },
   });
 export default {
+  async scheduled(_controller: unknown, env: Env) { await refreshDueCalendars(env); },
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
     if (
@@ -31,6 +33,8 @@ export default {
     }
     if (url.pathname === "/healthz")
       return new Response("ok", { headers: securityHeaders(env) });
+    const sourceResponse = await sourceApi(request, env);
+    if(sourceResponse) return sourceResponse;
     const calendarResponse = await calendarApi(request, env);
     if (calendarResponse) return calendarResponse;
     const accountResponse = await accountApi(request, env);

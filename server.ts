@@ -1,3 +1,4 @@
+import { sourceApi, refreshDueCalendars } from "./calendar-sources";
 import { calendarApi } from "./calendar-api";
 import { extractWithNim, validImages } from "./ai";
 const host =
@@ -16,7 +17,7 @@ const accountEnv =
           process.env.ACCOUNT_DB_PATH || ".local/accounts.sqlite",
           await Bun.file(
             new URL("./migrations/0001_accounts.sql", import.meta.url),
-          ).text() + "\n" + await Bun.file(new URL("./migrations/0002_calendar_subscriptions.sql", import.meta.url)).text(),
+          ).text() + "\n" + await Bun.file(new URL("./migrations/0002_calendar_subscriptions.sql", import.meta.url)).text() + "\n" + await Bun.file(new URL("./migrations/0003_calendar_sources.sql", import.meta.url)).text(),
         ),
       };
 let aiWindow = Date.now(),
@@ -43,6 +44,8 @@ Bun.serve({
   async fetch(request) {
     const path = new URL(request.url).pathname;
     const headers = securityHeaders();
+    const sourceResponse = await sourceApi(request, accountEnv);
+    if(sourceResponse) return sourceResponse;
     const calendarResponse = await calendarApi(request, accountEnv);
     if (calendarResponse) return calendarResponse;
     const accountResponse = await accountApi(request, accountEnv);
@@ -169,3 +172,5 @@ Bun.serve({
   },
 });
 console.log(`ReturnRadar is listening on http://${host}:${port}`);
+
+setInterval(() => refreshDueCalendars(accountEnv).catch(() => {}), 5 * 60000).unref();

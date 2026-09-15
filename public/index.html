@@ -150,15 +150,15 @@
             </div>
           </section>
           <nav class="workspace-tabs" aria-label="Workspace">
-            <button type="button" data-workspace="items" aria-pressed="true">
+            <button type="button" data-workspace="items" disabled aria-pressed="true">
               <span data-icon="folder"></span> Your items
             </button>
-            <button type="button" data-workspace="planner" aria-pressed="false">
+            <button type="button" data-workspace="planner" disabled aria-pressed="false">
               <span data-icon="calendar"></span> Calendar
             </button>
             <button
               type="button"
-              data-workspace="insights"
+              data-workspace="insights" disabled
               aria-pressed="false"
             >
               <span data-icon="chart"></span> Insights
@@ -187,7 +187,7 @@
                 /></label>
               </div>
             </div>
-            <div class="planner-layout">
+            <p id="connected-calendars-summary" class="fine-print"></p><label class="calendar-source-picker">Show calendar<select id="calendar-source-filter"><option value="all">All calendars</option><option value="tuckday">Tuckday reminders</option></select></label><div class="planner-layout">
               <section class="month-card" aria-label="Month calendar">
                 <div class="month-toolbar">
                   <button
@@ -589,6 +589,17 @@
 <details><summary>Apple Calendar / other apps</summary><p>Choose New Calendar Subscription or Add Subscribed Calendar, then paste the private URL.</p><a id="calendar-apple">Open calendar subscription ↗</a></details>
 </div><button id="calendar-disconnect" class="danger" type="button">Disconnect private link</button><p class="fine-print">Disconnect stops future access. Remove the subscribed calendar from your calendar app to remove its cached events.</p>
 </div><button id="calendar-connect-retry" class="secondary" type="button" hidden>Retry connection</button>
+</dialog>
+<dialog id="incoming-calendar-dialog" class="utility-dialog" aria-labelledby="incoming-title">
+<div class="modal-header"><div><span class="eyebrow">ALL YOUR CALENDARS, HERE</span><h2 id="incoming-title">Bring your calendars in</h2></div><button id="incoming-close" class="icon-button" data-close type="button" aria-label="Close connected calendars">×</button></div>
+<p>Connect Google, Outlook and iCloud calendars to see their events together in Tuckday. Add one ICS link per calendar.</p>
+<p class="fine-print">Read-only: changes made in the original calendar are pulled in here. Edit events in their source app. This view covers the past month and coming year.</p>
+<p id="incoming-status" role="status">Loading connected calendars…</p><a id="incoming-signin" href="/account" hidden>Sign in to connect calendars</a>
+<form id="incoming-form"><label>Calendar name<input id="incoming-name" required maxlength="60" placeholder="Work, family, classes…" /></label><label>ICS subscription URL<input id="incoming-url" required type="url" maxlength="2048" placeholder="https://…/calendar.ics" autocomplete="off" spellcheck="false" /></label><p class="fine-print">The link is private to your account. Events are stored for syncing; calendar links are never sent to AI.</p><button type="submit" class="primary">Connect this calendar</button></form>
+<details class="calendar-help"><summary>Where to find the ICS link</summary><p><strong>Outlook:</strong> Settings → Calendar → Shared calendars → Publish a calendar. Choose access, click Publish and copy the <strong>ICS</strong> link shown in your screenshot.</p><p><strong>Google:</strong> Calendar settings → select a calendar → Integrate calendar → Secret address in iCal format. Work accounts may restrict this.</p><p><strong>iCloud:</strong> Enable Public Calendar sharing, copy its webcal link and use https instead of webcal here.</p><p>Links must come from the provider’s calendar service. Sharing permissions control which titles and locations appear.</p></details>
+<div class="incoming-heading"><h3>Connected calendars</h3><button id="incoming-refresh" type="button" class="secondary">Refresh calendars</button></div><p id="incoming-empty">No calendars connected yet.</p><div id="connected-source-list"></div>
+<p class="fine-print">Refresh checks are limited to once per minute per calendar. Background checks continue when Tuckday is closed; provider publishing delays may still apply.</p>
+<details class="calendar-help"><summary>Send Tuckday reminders to another app</summary><p>This is the other direction: subscribe to Tuckday reminders in your calendar app.</p><button id="calendar-share" class="secondary" type="button">Share Tuckday reminders</button></details>
 </dialog>
   </body>
 </html>

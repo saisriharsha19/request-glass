@@ -5,6 +5,7 @@ export const assets: Record<string, string> = {
   "/account.js": "public/account.js",
   "/auth-client.js": "public/auth-client.js",
   "/celebration.js": "public/celebration.js",
+  "/calendar-sources.js": "public/calendar-sources.js",
   "/calendar-connect.js": "public/calendar-connect.js",
   "/character.js": "public/character.js",
   "/art/desk-folder-v1.png": "public/art/desk-folder-v1.png",
