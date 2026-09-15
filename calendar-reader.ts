@@ -1,3 +1,4 @@
+import {findLinks} from './public/links.js';
 import ICAL from 'ical.js';
 export type ExternalEvent = {id:string; title:string; start:string; end:string; allDay:boolean; floating:boolean; location:string; description:string; links:string[]};
 // Provider feeds only: private network targets, arbitrary redirect destinations and credentials are rejected.
@@ -47,8 +48,8 @@ export function readCalendar(text: string, now = new Date()) {
     const beginning = instant(start,zone), ending = instant(end,zone);
     if(ending < from.slice(0,beginning.length===10?10:24) || beginning > until.slice(0,beginning.length===10?10:24)) return;
     const description = (event.description || '').slice(0,3000);
-    const rawLinks = [event.component.getFirstPropertyValue('url') || '', description, event.component.getFirstPropertyValue('x-alt-desc') || ''].join(' ');
-    const links = [...new Set((rawLinks.match(/https?:\/\/[^\s<>"\x00-\x1f]+/gi) || []).map((link:string) => link.replace(/&amp;/g,'&').replace(/[.,;!?)]+$/,'')))].filter((link:string)=>{try{const parsed=new URL(link);return !parsed.username&&!parsed.password&&link.length<=2048;}catch{return false;}}).slice(0,8);
+    const rawLinks = [event.component.getFirstPropertyValue('url') || '', event.description || '', event.location || '', event.component.getFirstPropertyValue('x-alt-desc') || ''].join(' ');
+    const links = findLinks(rawLinks);
     result.push({description:description.replace(/<[^>]*>/g,''),links,id:`${event.uid}:${recurrenceID}`,title:(event.summary||'Untitled event').slice(0,300),start:beginning,end:ending,allDay:start.isDate,floating:!start.isDate&&!zone&&start.zone.tzid==='floating',location:(event.location||'').slice(0,300)});
     if(result.length>1500) throw new Error('This calendar has over 1,500 occurrences in the coming year. Publish a smaller calendar.');
   }

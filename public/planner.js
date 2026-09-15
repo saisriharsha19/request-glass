@@ -1,3 +1,4 @@
+import {findLinks,linkify} from './links.js';
 import { icon } from "/icons.js";
 import { celebrate } from "/celebration.js";
 import {
@@ -100,7 +101,7 @@ export function createPlanner({
     $("#clear-day").hidden = !selected;
     $("#agenda-title").textContent = selected
       ? `On ${new Date(selected + "T12:00:00").toLocaleDateString(undefined, { dateStyle: "long" })}`
-      : "Agenda · connected events for this month";
+      : "Your agenda";
     const visible = events.filter(
       (e) =>
         (!e.external || selected || (e.date.slice(0,7)<=month && (e.endDate || e.date).slice(0,7)>=month)) &&
@@ -169,18 +170,19 @@ export function createPlanner({
         row.classList.add("external-event");
         row.dataset.state = event.ongoing ? "ongoing" : event.completed ? "past" : "upcoming";
         row.append(node("span", "source-badge", event.sourceName));
-        if(event.location) row.append(node("p", "", event.location));
+        if(event.location) row.append(linkify(node("p", "event-location"), event.location));
         const links=node("div","event-links");
-        for(const value of (event.links || [])) {try{const url=new URL(value);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)continue;
+        for(const value of findLinks([...(event.links || []),event.description || '',event.location || ''].join(' '))) {try{const url=new URL(value);if(!['https:','http:'].includes(url.protocol)||url.username||url.password)continue;
           const link=node('a','secondary',/(^|\.)teams\.microsoft\.com$/.test(url.hostname)?'Join Teams meeting':url.hostname==='meet.google.com'?'Join Google Meet':/(^|\.)zoom.us$/.test(url.hostname)?'Join Zoom meeting':url.hostname);
           link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';links.append(link);
         }catch{}}
         if(links.childElementCount)row.append(links);
-        if(event.description){const details=node('details','event-details');details.dataset.event=event.sourceId+':'+event.key;details.open=openDetails.has(details.dataset.event);details.append(node('summary','','Event details'),node('p','',event.description));row.append(details);}
+        if(event.description){const details=node('details','event-details');details.dataset.event=event.sourceId+':'+event.key;details.open=openDetails.has(details.dataset.event);details.append(node('summary','','Event details'),linkify(node('p',''),event.description));row.append(details);}
         row.append(node("p", "fine-print", "From your connected calendar · Edit in its original app"));
         list.append(row);
         continue;
       }
+      if(event.p.notes)row.append(linkify(node("p","event-notes"),event.p.notes));
       const actions = node("div", "agenda-actions");
       actions.append(
         button("Edit", () => edit(event.p)),

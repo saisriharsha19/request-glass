@@ -187,7 +187,7 @@ export function parseCalendar(text) {
     if (property === "RRULE" || property === "RECURRENCE-ID")
       current.recurring = true;
     if (property === "SUMMARY") current.title = unescape(value);
-    if (property === "DESCRIPTION") current.notes = unescape(value);
+    if (["DESCRIPTION", "LOCATION", "URL"].includes(property)) current.notes = [current.notes, unescape(value)].filter(Boolean).join("\n");
     if (property === "DTSTART") {
       // Only import all-day dates. Timed/TZ events require a time-zone capable calendar.
       if (/^\d{8}$/.test(value)) {

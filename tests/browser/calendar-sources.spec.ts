@@ -67,3 +67,27 @@ test('calendar pages load on demand and long content fits a narrow phone',async(
  expect(await page.locator('.agenda-event').first().evaluate(e=>e.scrollWidth<=e.clientWidth)).toBe(true);
  await page.screenshot({path:'/tmp/tuckday-calendar-mobile.png'});
 });
+
+test('cached calendar URLs are clickable inline and dropdowns remain readable',async({page})=>{
+ const user={id:'links-owner',username:'alex',name:'Alex'};
+ await page.setViewportSize({width:320,height:740});
+ await page.route('**/api/auth/config',r=>r.fulfill({json:{configured:true}}));
+ await page.route('**/api/auth/session',r=>r.fulfill({json:{user}}));
+ await page.route('**/api/purchases',r=>r.fulfill({json:{purchases:[],revision:0,next:null}}));
+ await page.route('**/api/calendar/sources**',r=>r.fulfill({json:{userId:user.id,sources:[{id:'work',name:'Personal and family appointments',eventCount:1,last_checked:1}]}}));
+ await page.route('**/api/calendar/events?**',r=>r.fulfill({json:{userId:user.id,next:null,events:[{id:'cached',title:'Cached appointment',start:new Date().toISOString(),end:new Date(Date.now()+3600000).toISOString(),sourceId:'work',sourceName:'Work',location:'https://example.com/room',description:'Join www.example.com/meeting. javascript:alert(1)'}]}}));
+ await page.context().route('https://example.com/**',r=>r.fulfill({body:'Meeting destination'}));
+ await page.goto('/');await page.locator('[data-workspace="planner"]').click();
+ await page.locator('.event-details summary').click();
+ const inline=page.locator('.event-details a');await expect(inline).toHaveAttribute('href','https://www.example.com/meeting');
+ const popup=page.waitForEvent('popup');await page.locator('.event-location a').click();const opened=await popup;await opened.waitForLoadState();expect(opened.url()).toBe('https://example.com/room');await opened.close();
+ for(const width of [320,390,768,1280]) {
+  await page.setViewportSize({width,height:844});
+  for(const id of ['#agenda-filter','#calendar-source-filter']) {
+   const measure=await page.locator(id).evaluate(el=>({font:parseFloat(getComputedStyle(el).fontSize),height:el.getBoundingClientRect().height,width:el.getBoundingClientRect().width,right:el.getBoundingClientRect().right}));
+   expect(measure.font).toBeGreaterThanOrEqual(16);expect(measure.height).toBeGreaterThanOrEqual(48);expect(measure.right).toBeLessThanOrEqual(width);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+ await page.setViewportSize({width:320,height:844});await page.locator('#agenda-filter').scrollIntoViewIfNeeded();await page.screenshot({path:'/tmp/tuckday-selects-phone.png'});
+});

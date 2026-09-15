@@ -1,3 +1,4 @@
+import {linkify} from '/links.js';
 import { connectedEvents, connectedSources, setCalendarRange, calendarPage, loadCalendarPage } from "/calendar-sources.js";
 import { celebrate } from "/celebration.js";
 import { icon } from "/icons.js";
@@ -443,7 +444,7 @@ function render() {
         ),
       );
     card.append(top);
-    if (p.notes) card.append(el("p", "purchase-note", p.notes));
+    if (p.notes) card.append(linkify(el("p", "purchase-note"), p.notes));
     const dates = el("div", "deadlines");
     for (const [key, label] of Object.entries(kinds))
       if (p[key]) {

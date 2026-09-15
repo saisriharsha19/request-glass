@@ -2666,3 +2666,34 @@ dialog::backdrop {
   .account-intro h1 { font-size:clamp(1.75rem,8vw,2.375rem); }
   .source-badge { max-width:100%; }
 }
+
+/* A single readable control scale. Native dropdown menus retain OS accessibility. */
+html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+select, .organize-tools select, .agenda-heading select, .sort-label select, .form-grid select {
+  font-family:inherit; font-size:1rem; line-height:1.5; font-weight:400;
+  height:auto; min-height:48px; width:100%; min-width:0; max-width:100%;
+  padding:10px 36px 10px 12px; color:var(--ink); background-color:var(--surface);
+  border:1px solid var(--line); border-radius:7px; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%2352684b' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
+}
+select option { font:inherit; color:var(--ink); background:var(--surface); }
+.organize-tools label, .agenda-heading label, .sort-label, .calendar-source-picker, .calendar-month-picker {
+  font-size:.875rem; line-height:1.45; gap:6px; min-width:0;
+}
+.sort-label { display:flex; flex-direction:column; align-items:stretch; white-space:normal; }
+.agenda-heading label { flex:0 1 220px; }
+.organize-tools label { flex:1 1 200px; }
+.agenda-event p { font-size:.9375rem; line-height:1.55; }
+.event-details a, .event-location a, .event-notes a, .purchase-note a { color:#315d78; text-decoration:underline; overflow-wrap:anywhere; }
+@media(max-width:600px) {
+  .organize-tools { display:grid; grid-template-columns:minmax(0,1fr); }
+  .organize-tools label { min-width:0; width:100%; }
+  .agenda-heading { flex-wrap:wrap; align-items:stretch; }
+  .agenda-heading label { flex:1 1 100%; width:100%; }
+  .sort-label { width:100%; }
+  .calendar-source-picker, .calendar-month-picker { max-width:none; width:100%; }
+  .form-grid label, #account-form label { font-size:.875rem; line-height:1.45; }
+}
+
+.agenda-heading { margin-bottom:16px; }

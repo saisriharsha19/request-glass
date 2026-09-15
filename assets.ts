@@ -11,6 +11,7 @@ export const assets: Record<string, string> = {
   "/art/desk-folder-v1.png": "public/art/desk-folder-v1.png",
   "/icons.js": "public/icons.js",
   "/organize.js": "public/organize.js",
+  "/links.js": "public/links.js",
   "/planner.js": "public/planner.js",
   "/documents.js": "public/documents.js",
   "/document-worker.js": "public/document-worker.js",
