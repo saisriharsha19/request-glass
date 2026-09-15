@@ -45,7 +45,7 @@ test("server sends a bounded non-streaming request and filters returned data", a
     "https://integrate.api.nvidia.com/v1/chat/completions",
   );
   expect(request.init.headers.Authorization).toBe("Bearer test-key");
-  expect(JSON.parse(request.init.body).max_tokens).toBe(2200);
+  expect(JSON.parse(request.init.body).max_tokens).toBe(4000);
   expect(result.item?.value).toBe("Headphones");
 });
 test("provider error does not include provider response or credential", async () => {

@@ -1,6 +1,6 @@
 import { sourceApi, refreshDueCalendars } from "./calendar-sources";
 import { calendarApi } from "./calendar-api";
-import { extractWithNim, validImages } from "./ai";
+import { extractWithNim, validImages, extractionError } from "./ai";
 import { accountIdentity, securityHeaders, type AuthEnv } from "./auth";
 import { accountApi, readBody } from "./account-api";
 export interface Env extends AuthEnv {
@@ -106,14 +106,8 @@ export default {
           notices,
         );
         return json({ fields, notices });
-      } catch {
-        return json(
-          {
-            error:
-              "AI assistance couldn’t read this receipt right now. Your entries are unchanged.",
-          },
-          502,
-        );
+      } catch(error) {
+        return json(extractionError(error),502);
       }
     }
     if (url.pathname.startsWith("/api/"))

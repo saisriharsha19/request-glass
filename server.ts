@@ -1,6 +1,6 @@
 import { sourceApi, refreshDueCalendars } from "./calendar-sources";
 import { calendarApi } from "./calendar-api";
-import { extractWithNim, validImages } from "./ai";
+import { extractWithNim, validImages, extractionError } from "./ai";
 const host =
   process.env.HOST ?? (process.env.RENDER === "true" ? "0.0.0.0" : "127.0.0.1");
 const port = Number(process.env.PORT ?? 3000);
@@ -124,14 +124,8 @@ Bun.serve({
           notices,
         );
         return json({ fields, notices });
-      } catch {
-        return json(
-          {
-            error:
-              "AI assistance couldn’t read this receipt right now. Your entries are unchanged. Try local extraction or enter the details.",
-          },
-          502,
-        );
+      } catch(error) {
+        return json(extractionError(error),502);
       } finally {
         aiInFlight--;
       }

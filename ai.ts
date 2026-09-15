@@ -162,7 +162,7 @@ async function completion(
       signal,
     },
   );
-  if (!response.ok) throw new Error("Provider unavailable");
+  if (!response.ok) throw Object.assign(new Error("Provider unavailable"),{code:`provider_${response.status}`});
   const result = (await response.json()) as {
     choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
   };
@@ -173,7 +173,7 @@ async function completion(
     answer.length > 30000 ||
     choice?.finish_reason === "length"
   )
-    throw new Error("Incomplete AI response");
+    throw Object.assign(new Error("Incomplete AI response"),{code:"incomplete_response"});
   return answer;
 }
 export async function extractWithNim(
@@ -217,7 +217,8 @@ export async function extractWithNim(
       notices.push('The image reader was unavailable; these suggestions use the extracted text.');
     }
   }
-  const combined = visualText
+  const imageReading=visualText;
+  let combined = visualText
     ? `LOCAL EXTRACTED TEXT (may contain OCR errors):\n${text}\n\nVISUAL READING (also may contain errors):\n${visualText}`
     : text;
   const messages = [{role:"system",content:prompt+" Reconcile both readings when supplied. If a disagreement cannot be resolved, omit that field. Use exact text evidence from a supplied reading."},{role:"user",content:combined}];
@@ -229,13 +230,14 @@ export async function extractWithNim(
       temperature: 0,
       chat_template_kwargs: { enable_thinking: false },
       response_format: { type: "json_object" },
-      max_tokens: 2200,
+      max_tokens: 4000,
       stream: false,
     },
     fetcher,
     signal,
   );
   let draft: Draft = {}, lastError: unknown;
+  function preferExtractedText(){if(visualText&&text.trim().length>=40){combined=text;visualText='';messages.splice(0,messages.length,{role:'system',content:prompt},{role:'user',content:text});notices.push('The combined reading was inconclusive; these suggestions use the extracted text.');}}
   for(let attempt=0;attempt<2;attempt++){
     try {
       const answer=await requestDraft();
@@ -247,19 +249,25 @@ export async function extractWithNim(
       const missingDates=[...new Set(combined.split(/\n/).map(line=>readDate(line)).filter(Boolean))].filter(date=>!acceptedDates.includes(date));
       const noDates=missingDates.length>0;
       if(attempt===0&&(rejected.length||noDates||!Object.keys(draft).length)){
+        preferExtractedText();
         messages.push({role:'assistant',content:answer},{role:'user',content:`Review your answer once. Fields rejected by source validation: ${rejected.join(', ')||'none'}. ${noDates?`Some printed dates were not mapped: ${missingDates.join(', ')}. Check each date purpose. Map a price check to priceCheckDate and a separate renewal or payment due to reminderDate. Omit only irrelevant dates such as delivery; never invent a deadline.`:''} Return the complete corrected JSON, using exact quotes with dates and their purposes. Every value must be grounded in the source. Do not repeat unsupported guesses.`});
         continue;
       }
       lastError=undefined;break;
-    }catch(error){lastError=error;if(signal.aborted)break;messages.push({role:'user',content:'The previous response was incomplete or invalid. Return one complete JSON object using the requested field objects and exact source evidence.'});}
+    }catch(error){lastError=error;if(signal.aborted)break;preferExtractedText();messages.push({role:'user',content:'The previous response was incomplete or invalid. Return one complete JSON object using the requested field objects and exact source evidence.'});}
   }
   if(!Object.keys(draft).length&&lastError)throw lastError;
   if(lastError&&Object.keys(draft).length)notices.push('Only the details confirmed before the provider stopped responding are shown. Review any blank fields.');
   if(draft.reminder&&!draft.reminderLabel){draft.reminderLabel={value:'Reminder',evidence:draft.reminder.evidence,source:draft.reminder.source};}
   for (const field of Object.values(draft))
-    if (visualText && !normalized(text).includes(normalized(field.evidence))) {
+    if (imageReading && !normalized(text).includes(normalized(field.evidence))) {
       field.source = "image";
       field.page = 1;
     }
   return draft;
+}
+
+export function extractionError(error:unknown){
+ const code=typeof (error as any)?.code==='string'&&/^(provider_\d{3}|incomplete_response)$/.test((error as any).code)?(error as any).code:error instanceof SyntaxError?'invalid_response':(error as any)?.name==='TimeoutError'?'timeout':'extraction_failed';
+ return {error:code==='timeout'?'AI reading took too long. Your draft and temporary source are still here.':code==='incomplete_response'||code==='invalid_response'?'AI returned an incomplete reading. Your draft and temporary source are still here.':'AI is temporarily unavailable. Your draft and temporary source are still here.',code};
 }
