@@ -148,3 +148,9 @@ test('one structured repair recovers rejected date shape without another image u
  const fields=await extractWithNim('Return by October 12, 2026.','key','model',async()=>Response.json({choices:[{message:{content:JSON.stringify(++calls===1?{return:'2026-10-12'}:{return:{value:'2026-10-12',evidence:'Return by October 12, 2026.'}})},finish_reason:'stop'}]}));
  expect(calls).toBe(2);expect(fields.return.value).toBe('2026-10-12');
 });
+
+test('inconclusive combined reading is repaired against local text without uploading images again',async()=>{
+ const bodies:any[]=[];const notices:string[]=[];const text='Service renewal: October 3, 2026. This is the confirmed renewal notice.';
+ const fields=await extractWithNim(text,'key','model',async(_url,init)=>{const body=JSON.parse(init.body as string);bodies.push(body);return Response.json({choices:[{message:{content:bodies.length===1?'Unclear visual reading':bodies.length===2?JSON.stringify({reminderDate:{value:'wrong date',evidence:'Unclear visual reading'}}):JSON.stringify({reminderDate:{value:'2026-10-03',evidence:'Service renewal: October 3, 2026.'},reminderName:{value:'Service renewal',evidence:'Service renewal: October 3, 2026.'}})},finish_reason:'stop'}]});},['data:image/jpeg;base64,/9j/AAAA'],'vision',notices);
+ expect(bodies).toHaveLength(3);expect(bodies[2].messages[1].content).toBe(text);expect(JSON.stringify(bodies[2])).not.toContain('data:image');expect(fields.reminder.value).toBe('2026-10-03');expect(fields.reminder.source).toBe('text');expect(notices).toHaveLength(1);
+});
