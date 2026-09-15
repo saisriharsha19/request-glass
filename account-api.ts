@@ -71,6 +71,9 @@ export async function accountApi(
   if (path === "/api/auth/config" && request.method === "GET")
     return apiJson({
       configured: !!env.DB,
+      primaryOrigin: env.DB
+        ? null
+        : "https://return-radar.return-radar.workers.dev",
       auth: null,
       sync: env.DB ? "database" : "local-only",
       aiRequiresLogin: env.AI_REQUIRES_LOGIN !== false,
@@ -414,6 +417,12 @@ export async function accountApi(
         "currency",
         "amount",
         "purchased",
+        "category",
+        "tags",
+        "favorite",
+        "reminderLabel",
+        "leadDays",
+        "completed",
         ...Object.keys(kinds),
       ];
       const purchase: any = Object.fromEntries(

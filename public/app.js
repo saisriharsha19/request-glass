@@ -1,3 +1,7 @@
+import { celebrate } from "/celebration.js";
+import { icon } from "/icons.js";
+import { categories, templates, itemEvents } from "/organize.js";
+import { createPlanner } from "/planner.js";
 import { PurchaseSync } from "/sync.js";
 import {
   kinds,
@@ -10,6 +14,17 @@ import {
 } from "/logic.js";
 const $ = (s) => document.querySelector(s);
 const sync = new PurchaseSync();
+let documentController = null;
+let planner;
+const searchIndex = new WeakMap();
+function searchable(p) {
+  if (!searchIndex.has(p))
+    searchIndex.set(
+      p,
+      `${p.item} ${p.merchant} ${p.notes} ${p.text} ${(p.tags || []).join(" ")} ${p.category || ""}`.toLowerCase(),
+    );
+  return searchIndex.get(p);
+}
 let finishAccountLoad;
 const accountLoaded = new Promise((resolve) => {
   finishAccountLoad = resolve;
@@ -23,7 +38,9 @@ const accountUpdates =
     ? new BroadcastChannel("returnradar-account")
     : null;
 function syncMessage(text) {
-  $("#sync-message").textContent = text;
+  $("#sync-message").textContent = sync.primaryOrigin
+    ? "Sync is available on the current app. Export a backup here, open the current app, sign in, then restore it there. Your device copies stay safe."
+    : text;
 }
 async function savePurchase(p, version = 0) {
   if (sync.user) {
@@ -45,34 +62,50 @@ async function afterWrite() {
 }
 async function updateAccountUI() {
   $("#sync-title").textContent = sync.user
-    ? `Hi, ${sync.user.name}.`
+    ? `Hi, ${sync.user.name}. @${sync.user.username}`
     : "On this device";
   $("#storage-state").textContent = sync.user
     ? "Account sync"
     : "Saved on your device";
   $("#sync-now").hidden = !sync.user;
   $("#sync-signin").hidden = !!sync.user;
+  if (sync.primaryOrigin) {
+    $("#sync-title").textContent = "This is the old, device-only site";
+    $("#sync-signin").href = sync.primaryOrigin;
+    $("#sync-signin").textContent = "Open the current app ↗";
+  }
   const local = db ? await transaction("readonly", (s) => s.getAll()) : [];
   $("#claim-local").hidden =
     !sync.user ||
     !local.some((p) => isPurchase(p) && !purchases.some((c) => c.id === p.id));
 }
-async function refreshSync() {
-  if (
-    !sync.user ||
-    syncRunning ||
-    document.hidden ||
-    $("#purchase-dialog").open
-  )
+async function refreshSync({ force = false, session = false } = {}) {
+  if (!accountReady || syncRunning || document.hidden) return;
+  if ($("#purchase-dialog").open) {
+    if (force || session)
+      syncMessage(
+        "Your draft is safe. Close the editor to refresh other devices’ changes.",
+      );
     return;
+  }
   syncRunning = true;
   $("#sync-now").disabled = true;
   try {
-    await reload();
+    if (session && (await sync.refreshSession())) {
+      loadSequence++;
+      purchases = [];
+      render();
+    }
+    if (sync.user || session) await reload(force);
     await updateAccountUI();
-    syncMessage("Up to date across your devices.");
+    syncMessage(
+      sync.user
+        ? `@${sync.user.username} · ${purchases.length} saved items · Checked ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+        : "Device-only mode. Sign in to the same username on each device to sync.",
+    );
   } catch (error) {
-    syncMessage(error.message);
+    syncMessage(`Sync needs attention: ${error.message}`);
+    $("#sync-now").hidden = false;
   } finally {
     syncRunning = false;
     $("#sync-now").disabled = false;
@@ -203,14 +236,16 @@ function transaction(mode, action) {
     tx.onabort = () => reject(tx.error || new Error("Could not save."));
   });
 }
-async function reload() {
+async function reload(force = false) {
   const sequence = ++loadSequence;
   const result = sync.user
-    ? await sync.list()
+    ? await sync.list(force)
     : await transaction("readonly", (store) => store.getAll());
   if (sequence !== loadSequence) return;
-  if (result) purchases = result.filter(isPurchase);
-  render();
+  if (result) {
+    purchases = result.filter(isPurchase);
+    render();
+  }
 }
 async function getReceipt(id) {
   return new Promise((resolve, reject) => {
@@ -249,17 +284,28 @@ function reminders(list) {
   );
 }
 function render() {
+  planner?.render();
   const active = purchases.filter((p) => !p.archived);
+  const next = itemEvents(active)[0];
+  $("#next-date-label").textContent =
+    next && daysAway(next.date) < 0 ? "OVERDUE" : "NEXT UP";
+  $("#next-date-number").textContent = next
+    ? String(Number(next.date.slice(8)))
+    : "—";
+  $("#next-date-month").textContent = next
+    ? new Date(next.date + "T12:00:00").toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+      })
+    : "No dates added";
+  $("#next-date-item").textContent = next
+    ? `${next.p.item} · ${next.label}`
+    : "Add a deadline to an item.";
   $("#purchase-count").textContent = active.length;
   $("#nav-count").textContent = active.length;
-  $("#deadline-count").textContent = active.reduce(
-    (sum, p) =>
-      sum +
-      Object.keys(kinds).filter(
-        (k) => p[k] && daysAway(p[k]) >= 0 && daysAway(p[k]) <= 7,
-      ).length,
-    0,
-  );
+  $("#deadline-count").textContent = itemEvents(active).filter(
+    (e) => daysAway(e.date) >= 0 && daysAway(e.date) <= 7,
+  ).length;
   $("#receipt-count").textContent = active.filter(
     (p) => p.hasImage || p.text.trim(),
   ).length;
@@ -268,27 +314,32 @@ function render() {
     (p) =>
       (view === "archived" ? p.archived : !p.archived) &&
       (view !== "soon" ||
-        Object.keys(kinds).some(
-          (k) => p[k] && daysAway(p[k]) >= 0 && daysAway(p[k]) <= 7,
+        itemEvents([p]).some(
+          (e) => daysAway(e.date) >= 0 && daysAway(e.date) <= 7,
         )) &&
       (filter === "all" || p[filter]) &&
-      `${p.item} ${p.merchant} ${p.notes}`.toLowerCase().includes(query),
+      ($("#category-filter").value === "all" ||
+        (p.category || "General") === $("#category-filter").value) &&
+      (!$("#favorites-only").checked || p.favorite) &&
+      searchable(p).includes(query),
   );
   const currentDay = today();
   const nearest = (p) =>
     Math.min(
       ...Object.keys(kinds)
-        .filter((k) => p[k] && daysAway(p[k]) >= 0)
+        .filter((k) => p[k] && p.completed?.[k] !== p[k] && daysAway(p[k]) >= 0)
         .map((k) => daysAway(p[k])),
       Infinity,
     );
   const ranks = new Map(visible.map((p) => [p.id, nearest(p)]));
-  visible.sort((a, b) =>
-    $("#sort").value === "name"
-      ? a.item.localeCompare(b.item)
-      : $("#sort").value === "recent"
-        ? b.purchased.localeCompare(a.purchased)
-        : ranks.get(a.id) - ranks.get(b.id),
+  visible.sort(
+    (a, b) =>
+      Number(!!b.favorite) - Number(!!a.favorite) ||
+      ($("#sort").value === "name"
+        ? a.item.localeCompare(b.item)
+        : $("#sort").value === "recent"
+          ? b.purchased.localeCompare(a.purchased)
+          : ranks.get(a.id) - ranks.get(b.id)),
   );
   renderTimeline(active, currentDay);
   $("#list-count").textContent = visible.length;
@@ -297,22 +348,17 @@ function render() {
   if (!visible.length) {
     const empty = el("div", "empty-state");
     empty.append(
-      el("div", "receipt-art", "≋"),
-      el(
-        "h3",
-        "",
-        purchases.length
-          ? "Nothing in this corner of the radar."
-          : "Your future self says thanks.",
-      ),
+      el("div", "receipt-art"),
+      el("h3", "", purchases.length ? "No matching items." : "No items yet."),
       el(
         "p",
         "",
         purchases.length
           ? "Try another filter, or add something new to keep an eye on."
-          : "That receipt in your inbox? Give it a home. We’ll help you keep the important dates close.",
+          : "Add a receipt, document or reminder. Its details and dates will appear here.",
       ),
     );
+    empty.querySelector(".receipt-art").append(icon("pocket"));
     const actions = el("div", "empty-actions");
     const add = el("button", "primary", "＋ Add a purchase");
     add.onclick = () => openPurchase();
@@ -342,11 +388,30 @@ function render() {
         `${p.merchant || "Store not added"}${p.purchased ? " · " + fmtDate(p.purchased) : ""}`,
       ),
     );
+    if (p.tags?.length || p.category)
+      info.append(
+        el(
+          "small",
+          "item-tags",
+          [p.category, ...(p.tags || [])].filter(Boolean).join(" · "),
+        ),
+      );
     top.append(
-      el("div", "purchase-symbol", p.cancel ? "↻" : "▣"),
+      el("div", "purchase-symbol"),
       info,
       el("span", "price-label", money(p)),
     );
+    top
+      .querySelector(".purchase-symbol")
+      .append(
+        icon(
+          p.favorite
+            ? "bookmark"
+            : p.category === "Documents"
+              ? "document"
+              : "folder",
+        ),
+      );
     card.append(top);
     if (p.notes) card.append(el("p", "purchase-note", p.notes));
     const dates = el("div", "deadlines");
@@ -357,7 +422,7 @@ function render() {
           el(
             "span",
             `deadline ${days < 0 ? "expired" : days <= 7 ? "urgent" : ""}`,
-            `${label} · ${fmtDate(p[key])}${days === 0 ? " · Today" : days > 0 && days <= 7 ? ` · ${days}d left` : days < 0 ? " · Past" : ""}`,
+            `${key === "reminder" ? p.reminderLabel || label : label} · ${fmtDate(p[key])}${p.completed?.[key] === p[key] ? " · Done" : days === 0 ? " · Today" : days > 0 && days <= 7 ? ` · ${days}d left` : days < 0 ? " · Past" : ""}`,
           ),
         );
       }
@@ -383,7 +448,7 @@ function render() {
         await afterWrite();
         toast(
           p.archived
-            ? "Back on your radar."
+            ? "Restored from the archive."
             : "Archived. You can restore it anytime.",
         );
       } catch (error) {
@@ -393,6 +458,29 @@ function render() {
     actions.append(edit);
     if (!p.archived) actions.append(cal);
     actions.append(archive);
+    const favorite = el(
+      "button",
+      "",
+      p.favorite ? "★ Favorited" : "☆ Favorite",
+    );
+    favorite.onclick = async () => {
+      try {
+        await savePurchase({ ...p, favorite: !p.favorite }, p._version || 0);
+        await afterWrite();
+      } catch (error) {
+        toast(error.message);
+      }
+    };
+    const duplicate = el("button", "", "Duplicate");
+    duplicate.onclick = async () => {
+      await openPurchase({ ...p, image: null, hasImage: false, completed: {} });
+      editing = null;
+      editingVersion = 0;
+      $("#delete").hidden = true;
+      $("#dialog-title").textContent = "Make a copy";
+      $("#item").value = p.item.slice(0, 173) + " (copy)";
+    };
+    actions.append(favorite, duplicate);
     card.append(actions);
     if (p.hasImage || p.text.trim())
       card.append(
@@ -408,13 +496,8 @@ function render() {
   $("#load-more").hidden = visible.length <= pageLimit;
 }
 function renderTimeline(active, currentDay) {
-  const events = active
-    .flatMap((p) =>
-      Object.entries(kinds)
-        .filter(([key]) => p[key] && daysAway(p[key], currentDay) >= 0)
-        .map(([key, label]) => ({ p, key, label, date: p[key] })),
-    )
-    .sort((a, b) => a.date.localeCompare(b.date))
+  const events = itemEvents(active)
+    .filter((e) => daysAway(e.date, currentDay) >= 0)
     .slice(0, 3);
   const root = $("#upcoming-list");
   root.replaceChildren();
@@ -422,12 +505,8 @@ function renderTimeline(active, currentDay) {
     const empty = el("div", "timeline-empty");
     const copy = el("div");
     copy.append(
-      el("strong", "", "A clear horizon."),
-      el(
-        "p",
-        "",
-        "Add a date to a purchase. Your next reminders will land here.",
-      ),
+      el("strong", "", "No upcoming dates."),
+      el("p", "", "Add a date to an item to list it here."),
     );
     empty.append(el("span", "", "◷"), copy);
     root.append(empty);
@@ -451,6 +530,7 @@ function renderTimeline(active, currentDay) {
     );
     const button = el("button");
     button.setAttribute("aria-label", `Review ${event.p.item} ${event.label}`);
+    button.append(icon("arrow"));
     button.onclick = () => openPurchase(event.p);
     row.append(stamp, copy, button);
     root.append(row);
@@ -504,7 +584,12 @@ async function openPurchase(p = null) {
   for (const key of fields)
     $(`#${key}`).value = p?.[key] ?? (key === "currency" ? "USD" : "");
   $("#ocr-status").textContent =
-    "Images up to 8 MB. PDFs up to 10 MB / 10 pages. Read on your device; Uploaded files are not saved.";
+    "Images up to 8 MB. PDF, Office and text documents up to 10 MB (PDF: 10 pages). Original files are not saved.";
+  $("#category").value = p?.category || "General";
+  $("#tags").value = (p?.tags || []).join(", ");
+  $("#favorite").checked = !!p?.favorite;
+  $("#reminderLabel").value = p?.reminderLabel || "";
+  $("#leadDays").value = String(p?.leadDays ?? 3);
   preview();
   $("#purchase-dialog").showModal();
   if (p?.hasImage) {
@@ -535,6 +620,8 @@ function setBusy(value) {
 function stopWork() {
   ocrRun++;
   openSequence++;
+  documentController?.abort();
+  documentController = null;
   pdfController?.abort();
   pdfController = null;
   aiController?.abort();
@@ -552,6 +639,7 @@ function stopWork() {
   if (oldWorker) oldWorker.terminate().catch(() => {});
 }
 function closeDialog() {
+  queueMicrotask(() => refreshSync({ force: true, session: true }));
   visionImages = [];
   if (transientReceipt) receiptImage = null;
   $("#receipt-file").value = "";
@@ -614,6 +702,33 @@ $("#receipt-file").onchange = async (event) => {
   ) {
     await importPdf(file);
     event.target.value = "";
+    return;
+  }
+  if (!file.type.startsWith("image/")) {
+    const run = ++ocrRun;
+    documentController = new AbortController();
+    setBusy(true);
+    $("#ocr-status").textContent = "Reading your document on this device…";
+    try {
+      const { readDocument } = await import("/documents.js");
+      const result = await readDocument(file, {
+        signal: documentController.signal,
+      });
+      if (run !== ocrRun) return;
+      receiptImage = null;
+      visionImages = [];
+      transientReceipt = true;
+      preview();
+      $("#receipt-text").value = result.text;
+      extract();
+      $("#ocr-status").textContent =
+        `${result.format} text read. Review the details below. The original file is not saved.`;
+    } catch (error) {
+      if (run === ocrRun) $("#ocr-status").textContent = error.message;
+    } finally {
+      if (run === ocrRun) setBusy(false);
+      event.target.value = "";
+    }
     return;
   }
   if (
@@ -714,21 +829,40 @@ $("#purchase-form").onsubmit = async (event) => {
   };
   for (const key of fields) p[key] = $(`#${key}`).value.trim();
   p.amount = p.amount === "" ? "" : Number(p.amount);
+  p.category = $("#category").value;
+  p.tags = [
+    ...new Set(
+      $("#tags")
+        .value.split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+    ),
+  ];
+  p.favorite = $("#favorite").checked;
+  p.reminderLabel = $("#reminderLabel").value.trim();
+  p.leadDays = Number($("#leadDays").value);
+  p.completed = purchases.find((item) => item.id === editing)?.completed || {};
   if (!isPurchase(p)) {
     $("#form-error").textContent =
       "Check the item, amount, dates, and receipt size before saving.";
     return;
   }
+  const saveButton = $("#save").getBoundingClientRect();
+  const successPoint = {
+    x: saveButton.x + saveButton.width / 2,
+    y: saveButton.y,
+  };
+  const isNew = !editing;
   $("#save").disabled = true;
   try {
     await savePurchase(p, editingVersion);
     await afterWrite();
     $("#purchase-dialog").close();
-    celebrate();
+    if (isNew) celebrate(successPoint);
     toast(
       editing
-        ? "Purchase updated. Future you is in the loop."
-        : "On your radar! Add a calendar reminder to get a heads-up.",
+        ? "Changes saved."
+        : "Saved. You can add the date to your calendar.",
     );
   } catch (error) {
     $("#form-error").textContent = sync.user
@@ -773,6 +907,7 @@ $("#delete").onclick = async () => {
 };
 for (const btn of document.querySelectorAll("[data-view]"))
   btn.onclick = () => {
+    selectWorkspace("items");
     view = btn.dataset.view;
     for (const b of document.querySelectorAll("[data-view]"))
       b.classList.toggle("selected", b === btn);
@@ -859,7 +994,7 @@ $("#import").onchange = async (event) => {
         for (const p of data.purchases) putPurchase(s, receipts, p);
       });
     await afterWrite();
-    toast("Backup restored. Welcome back.");
+    toast("Backup restored.");
   } catch (error) {
     if (sync.user) {
       render();
@@ -886,14 +1021,99 @@ async function sample() {
   $("#notes").value =
     "Sample purchase for trying ReturnRadar. Not a real receipt.";
 }
-function celebrate() {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  document.querySelector(".celebration")?.remove();
-  const burst = el("div", "celebration", "✦  ✧  ✹  ✧  ✦");
-  burst.setAttribute("aria-hidden", "true");
-  document.body.append(burst);
-  setTimeout(() => burst.remove(), 1400);
+for (const category of categories) {
+  for (const id of ["#category", "#category-filter"]) {
+    const option = el("option", "", category);
+    option.value = category;
+    $(id).append(option);
+  }
 }
+$("#category-filter").onchange = $("#favorites-only").onchange = () => {
+  pageLimit = 30;
+  render();
+};
+$("#template-select").onchange = async (event) => {
+  const template = templates[event.target.value];
+  event.target.value = "";
+  if (!template) return;
+  await openPurchase();
+  for (const [key, value] of Object.entries(template))
+    $(`#${key}`).value = value;
+  setMethod("manual");
+};
+function selectWorkspace(selected) {
+  for (const button of document.querySelectorAll("[data-workspace]"))
+    button.setAttribute(
+      "aria-pressed",
+      String(button.dataset.workspace === selected),
+    );
+  for (const name of ["items", "planner", "insights"])
+    $(`#${name}-workspace`).hidden = name !== selected;
+  $(".intro").hidden = selected !== "items";
+  planner?.render();
+}
+for (const button of document.querySelectorAll("[data-workspace]"))
+  button.onclick = () => selectWorkspace(button.dataset.workspace);
+$("#planner-new").onclick = async () => {
+  await openPurchase();
+  setMethod("manual");
+  $("#reminderLabel").value = "Reminder";
+};
+planner = createPlanner({
+  getPurchases: () => purchases,
+  edit: openPurchase,
+  download,
+  toast,
+  exportCalendar: reminders,
+  save: async (p, version) => {
+    await savePurchase(p, version);
+    await afterWrite();
+  },
+  create: async (event) => {
+    const p = {
+      id: event.id,
+      item: event.title,
+      merchant: "",
+      purchased: "",
+      amount: "",
+      currency: "USD",
+      notes: event.notes,
+      text: "",
+      image: null,
+      archived: false,
+      category: "Documents",
+      reminderLabel: "Reminder",
+      leadDays: 3,
+    };
+    for (const key of Object.keys(kinds))
+      p[key] = key === "reminder" ? event.date : "";
+    await savePurchase(p, 0);
+    await afterWrite();
+  },
+});
+// Useful keyboard access; input and document editing are never intercepted.
+function focusSearch() {
+  selectWorkspace("items");
+  $("#search").focus();
+}
+$("#focus-search").onclick = focusSearch;
+$("#next-date-open").onclick = $("#quick-calendar").onclick = () =>
+  selectWorkspace("planner");
+$("#quick-csv").onclick = () => $("#export-csv").click();
+document.addEventListener("keydown", (event) => {
+  if (
+    event.key === "/" &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.isComposing &&
+    !event.target.closest("input, textarea, select, [contenteditable], dialog")
+  ) {
+    event.preventDefault();
+    focusSearch();
+  }
+});
+
 try {
   db = await openDB();
 } catch {
@@ -917,7 +1137,9 @@ try {
   finishAccountLoad();
 }
 $("#sync-now").onclick = () =>
-  accountReady ? refreshSync() : location.reload();
+  accountReady
+    ? refreshSync({ force: true, session: true })
+    : location.reload();
 $("#claim-local").onclick = async () => {
   if (!sync.user || syncRunning) return;
   const local = (await transaction("readonly", (s) => s.getAll())).filter(
@@ -953,10 +1175,21 @@ $("#claim-local").onclick = async () => {
     await updateAccountUI();
   }
 };
-if (accountUpdates) accountUpdates.onmessage = () => location.reload();
-setInterval(refreshSync, 15000);
-window.addEventListener("online", refreshSync);
-window.addEventListener("focus", refreshSync);
+if (accountUpdates)
+  accountUpdates.onmessage = () => refreshSync({ force: true, session: true });
+setInterval(() => refreshSync(), 15000);
+const resumeSync = () => refreshSync({ force: true, session: true });
+window.addEventListener("online", resumeSync);
+window.addEventListener("focus", resumeSync);
+window.addEventListener("pageshow", resumeSync);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) resumeSync();
+});
+window.addEventListener("offline", () =>
+  syncMessage(
+    "Offline. Account saves need a connection; keep your draft open until you reconnect.",
+  ),
+);
 if (updates)
   updates.onmessage = () => {
     if (db && !sync.user)
@@ -1203,85 +1436,3 @@ async function prepareVisionSheet(images) {
     );
   return [result];
 }
-
-// Delight is event-driven: no animation loops, scroll tracking, or saved state.
-const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-const playfulAnimations = new WeakMap();
-function wiggle(node, frames, duration = 240) {
-  playfulAnimations.get(node)?.cancel();
-  if (reducedMotion.matches) return;
-  const animation = node.animate(frames, { duration, easing: "ease-out" });
-  playfulAnimations.set(node, animation);
-}
-let greetings = 0;
-const buddyMessages = [
-  "Oh, hi. I’m Radar. Tiny body, excellent memory aid.",
-  "My hobbies? Keeping an eye on things. Both eyes, actually.",
-  "You found my good side. It’s every side.",
-  "Secret unlocked: you’re officially a friend of future you. ✦",
-];
-$("#radar-buddy").addEventListener("click", () => {
-  toast(buddyMessages[greetings % buddyMessages.length]);
-  greetings++;
-  wiggle($("#radar-buddy"), [
-    { transform: "rotate(-9deg)" },
-    { transform: "rotate(-5deg)", offset: 0.35 },
-    { transform: "rotate(-11deg)", offset: 0.7 },
-    { transform: "rotate(-9deg)" },
-  ]);
-  if (greetings % buddyMessages.length === 0) celebrate();
-});
-const futureNotes = [
-  "A tiny bit of order. A little more room for life.",
-  "Keep the receipt. Lose the mental tab.",
-  "Future you called. They said: excellent work.",
-  "Less rummaging. More getting on with your day.",
-  "Receipts are boring. Keeping your options? Pretty great.",
-];
-let noteIndex = 0;
-$("#note-shuffle").addEventListener("click", () => {
-  const note = $("#future-note");
-  note.textContent = futureNotes[noteIndex++ % futureNotes.length];
-  wiggle(note, [{ opacity: 0 }, { opacity: 1 }], 220);
-});
-$("#future-note").setAttribute("aria-live", "polite");
-$("#little-secret").addEventListener("click", () => {
-  celebrate();
-  toast(
-    "A very unofficial award for having your life a little more together. ✦",
-  );
-});
-// Hidden word works only outside editors; typing into receipts stays untouched.
-let secretWord = "",
-  lastSecretKey = 0;
-document.addEventListener("keydown", (event) => {
-  if (
-    event.ctrlKey ||
-    event.metaKey ||
-    event.altKey ||
-    event.isComposing ||
-    event.target.closest("input, textarea, select, [contenteditable], dialog")
-  )
-    return;
-  if (event.key.length !== 1) {
-    secretWord = "";
-    return;
-  }
-  const now = Date.now();
-  if (now - lastSecretKey > 1500) secretWord = "";
-  lastSecretKey = now;
-  secretWord = (secretWord + event.key.toLowerCase()).slice(-5);
-  if (secretWord === "radar") {
-    secretWord = "";
-    $("#radar-buddy").click();
-    celebrate();
-    toast("Radar reports: good human detected. Carry on. ✦");
-  }
-});
-reducedMotion.addEventListener("change", () => {
-  if (reducedMotion.matches) {
-    for (const node of [$("#radar-buddy"), $("#future-note")])
-      playfulAnimations.get(node)?.cancel();
-    document.querySelectorAll(".celebration").forEach((node) => node.remove());
-  }
-});

@@ -279,3 +279,36 @@ test("deleting an account removes its sessions and purchases but not other accou
       .username,
   ).toBe("bob");
 });
+
+test("organization and reminder metadata round trips through versioned account sync", async () => {
+  const { call, register } = setup();
+  const user = await register("organized");
+  const p = {
+    ...purchase(),
+    category: "Documents",
+    tags: ["family", "travel"],
+    favorite: true,
+    reminder: "2099-01-31",
+    reminderLabel: "Renew passport",
+    leadDays: 7,
+    completed: { reminder: "2099-01-31" },
+  };
+  const saved = await call(
+    "/api/purchases/receipt-1",
+    { purchase: p, baseVersion: 0 },
+    user.cookie,
+    "PUT",
+  );
+  expect(saved.status).toBe(200);
+  const records = await (
+    await call("/api/purchases", undefined, user.cookie)
+  ).json();
+  expect(records.purchases[0]).toMatchObject(p);
+  const invalid = await call(
+    "/api/purchases/receipt-1",
+    { purchase: { ...p, leadDays: 999 }, baseVersion: 1 },
+    user.cookie,
+    "PUT",
+  );
+  expect(invalid.status).toBe(400);
+});

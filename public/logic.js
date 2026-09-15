@@ -3,6 +3,7 @@ export const kinds = {
   cancel: "Cancel by",
   warranty: "Warranty ends",
   price: "Check price",
+  reminder: "Reminder",
 };
 export function validDate(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
@@ -134,8 +135,29 @@ export function isPurchase(p) {
         p.amount >= 0 &&
         p.amount <= 999999999)) &&
     ["purchased", ...Object.keys(kinds)].every(
-      (k) => p[k] === "" || validDate(p[k]),
+      (k) =>
+        (k === "reminder" && p[k] === undefined) ||
+        p[k] === "" ||
+        validDate(p[k]),
     ) &&
+    (p.category === undefined ||
+      (typeof p.category === "string" && p.category.length <= 40)) &&
+    (p.tags === undefined ||
+      (Array.isArray(p.tags) &&
+        p.tags.length <= 10 &&
+        p.tags.every((t) => typeof t === "string" && t.length <= 30))) &&
+    (p.favorite === undefined || typeof p.favorite === "boolean") &&
+    (p.reminderLabel === undefined ||
+      (typeof p.reminderLabel === "string" && p.reminderLabel.length <= 80)) &&
+    (p.leadDays === undefined ||
+      (Number.isInteger(p.leadDays) && p.leadDays >= 0 && p.leadDays <= 30)) &&
+    (p.completed === undefined ||
+      (!!p.completed &&
+        typeof p.completed === "object" &&
+        !Array.isArray(p.completed) &&
+        Object.entries(p.completed).every(
+          ([key, date]) => Object.hasOwn(kinds, key) && validDate(date),
+        ))) &&
     (p.image === null ||
       (typeof p.image === "string" &&
         p.image.length <= 12 * 1024 * 1024 &&
@@ -180,7 +202,12 @@ export function calendar(purchases) {
   for (const purchase of purchases.filter((p) => !p.archived))
     for (const [key, label] of Object.entries(kinds)) {
       const date = purchase[key];
-      if (!validDate(date) || daysAway(date) < 0) continue;
+      if (
+        !validDate(date) ||
+        daysAway(date) < 0 ||
+        purchase.completed?.[key] === date
+      )
+        continue;
       const next = new Date(date + "T12:00:00Z");
       next.setUTCDate(next.getUTCDate() + 1);
       lines.push(
@@ -189,12 +216,12 @@ export function calendar(purchases) {
         `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${date.replaceAll("-", "")}`,
         `DTEND;VALUE=DATE:${next.toISOString().slice(0, 10).replaceAll("-", "")}`,
-        `SUMMARY:${escapeICS(`${label}: ${purchase.item}`)}`,
-        `DESCRIPTION:${escapeICS(`${purchase.merchant}\n${purchase.notes}\nDate reviewed in ReturnRadar. Check the merchant's exact cutoff time.\nFor a deadline less than 3 days away, set an additional alert in your calendar.`)}`,
+        `SUMMARY:${escapeICS(`${key === "reminder" ? purchase.reminderLabel || label : label}: ${purchase.item}`)}`,
+        `DESCRIPTION:${escapeICS(`${purchase.merchant}\n${purchase.notes}\nDate reviewed in ReturnRadar. Check the merchant's exact cutoff time.\nConfirm the selected alert in your calendar, especially for a near deadline.`)}`,
         "BEGIN:VALARM",
-        "TRIGGER:-P3D",
+        `TRIGGER:-P${Number.isInteger(purchase.leadDays) ? purchase.leadDays : 3}D`,
         "ACTION:DISPLAY",
-        `DESCRIPTION:${escapeICS(`${label}: ${purchase.item}`)}`,
+        `DESCRIPTION:${escapeICS(`${key === "reminder" ? purchase.reminderLabel || label : label}: ${purchase.item}`)}`,
         "END:VALARM",
         "END:VEVENT",
       );

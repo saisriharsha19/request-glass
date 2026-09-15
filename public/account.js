@@ -16,9 +16,9 @@ function setMode(next) {
   mode = next;
   $("#account-title").textContent =
     next === "register"
-      ? "Make it yours."
+      ? "Create an account"
       : next === "recover"
-        ? "Let’s get you back in."
+        ? "Recover your account"
         : "Welcome back.";
   $("#name-label").hidden = next !== "register";
   $("#account-display-name").required = next === "register";
@@ -51,11 +51,11 @@ function render() {
   $("#account-details").hidden = !user || !!recoveryKey;
   $("#recovery-result").hidden = !recoveryKey;
   if (recoveryKey) {
-    $("#account-title").textContent = "You’re in.";
+    $("#account-title").textContent = "Account created";
     $("#recovery-key").textContent = recoveryKey;
     message("One last thing: save your recovery key.");
   } else if (user) {
-    $("#account-title").textContent = `Good to see you, ${user.name}.`;
+    $("#account-title").textContent = `${user.name}’s account`;
     $("#account-name").textContent = user.name;
     $("#account-id").textContent = `@${user.username}`;
     message("Signed in. Purchases saved to your account sync across devices.");

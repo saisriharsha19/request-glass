@@ -5,7 +5,7 @@ test("receipt review, persistence, edit, search, calendar, archive and restore",
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await expect(page.getByText("Your future self says thanks.")).toBeVisible();
+  await expect(page.getByText("No items yet.")).toBeVisible();
   await page.getByRole("button", { name: "Try a sample" }).click();
   await expect(page.locator("#item")).toHaveValue(
     "Cloud Nine Headphones (sample)",
@@ -451,47 +451,57 @@ test("multimodal sends prepared pages once and clears temporary images after AI"
   expect(images).toBe(0);
 });
 
-test("playful discoveries are keyboard accessible, bounded, and leave editors alone", async ({
+test("save celebrations are brief, bounded and never intercept typing", async ({
   page,
 }) => {
   await page.goto("/");
-  const buddy = page.getByRole("button", { name: "Say hello to Radar" });
-  await buddy.focus();
-  await page.keyboard.press("Enter");
-  await expect(page.locator("#toast")).toContainText("I’m Radar");
-  for (let i = 0; i < 3; i++) await buddy.click();
-  await expect(page.locator("#toast")).toContainText("Secret unlocked");
-  await expect(page.locator(".celebration")).toHaveCount(1);
-  await page.getByRole("button", { name: "Another little thought" }).click();
-  await expect(page.locator("#future-note")).toContainText("room for life");
-  await page.locator("#search").fill("radar");
-  await expect(page.locator("#toast")).toContainText("Secret unlocked");
-  await page.locator("#search").blur();
-  await page.keyboard.type("radar");
-  await expect(page.locator("#toast")).toContainText("good human detected");
-  await expect
-    .poll(() =>
-      page.evaluate(
-        () =>
-          document.getAnimations().filter((a) => a.playState === "running")
-            .length,
-      ),
-    )
-    .toBe(0);
-  await expect(page.locator(".celebration")).toHaveCount(0);
+  await page.keyboard.press("/");
+  await expect(page.locator("#search")).toBeFocused();
+  await page.locator("#new-purchase").click();
+  await page.locator("#item").fill("A record worth keeping");
+  await page.locator("#notes").fill("Keep / and radar as ordinary text.");
+  const before = await page.locator("#item").boundingBox();
+  await page.locator("#item").press("End");
+  await page.locator("#item").pressSequentially(" / edited");
+  expect((await page.locator("#item").boundingBox())!.width).toBe(
+    before!.width,
+  );
+  await page.locator("#save").click();
+  await expect(page.locator(".paper-burst")).toHaveCount(1);
+  expect(
+    await page
+      .locator(".paper-burst")
+      .evaluate((n) => getComputedStyle(n).pointerEvents),
+  ).toBe("none");
+  await expect(page.locator(".paper-burst")).toHaveCount(0, { timeout: 2000 });
+  await expect(page.locator("#toast")).toContainText("Saved.");
+  expect(
+    await page.locator("#toast").evaluate((n) => getComputedStyle(n).position),
+  ).not.toBe("fixed");
+  await expect(
+    page.locator("#radar-buddy, #future-note, .celebration"),
+  ).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        document.getAnimations().filter((a) => a.playState === "running")
+          .length,
+    ),
+  ).toBe(0);
 });
 
-test("reduced motion keeps discoveries usable without bursts or animations", async ({
+test("reduced motion preserves useful feedback without animated bursts", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Say hello to Radar" }).click();
-  await expect(page.locator("#toast")).toContainText("I’m Radar");
-  await page.getByRole("button", { name: "A little surprise" }).click();
-  await expect(page.locator("#toast")).toContainText("unofficial award");
-  await expect(page.locator(".celebration")).toHaveCount(0);
+  await page.locator("#new-purchase").click();
+  await page.locator("#item").fill("Quiet save");
+  await page.locator("#save").click();
+  await expect(page.locator(".purchase-card")).toContainText("Quiet save");
+  await expect(page.locator("#toast")).toContainText("Saved.");
+  await expect(page.locator(".paper-burst")).toHaveCount(0);
   expect(
     await page.evaluate(
       () =>
@@ -514,8 +524,9 @@ test("small phones keep navigation usable and the purchase form within the viewp
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
     320,
   );
-  await page.getByRole("button", { name: "Say hello to Radar" }).click();
-  await expect(page.locator("#toast")).toContainText("I’m Radar");
+  await page.locator('[data-workspace="planner"]').click();
+  await expect(page.locator("#month-grid")).toBeVisible();
+  await page.locator('[data-workspace="items"]').click();
   await page.locator("#new-purchase").click();
   await page.locator('button[data-method="manual"]').click();
   await page.locator("#item").fill("Phone-sized purchase form");

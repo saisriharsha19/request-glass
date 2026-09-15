@@ -127,3 +127,109 @@ test("mobile account fields stay fixed while typing and failed cloud saves retai
   await page.locator("#save").click();
   await expect(page.locator("#purchase-count")).toHaveText("1");
 });
+
+test("mobile resume refreshes the same account without pressing Sync now", async ({
+  page,
+  browser,
+}) => {
+  const username = "resume-" + crypto.randomUUID().slice(0, 8);
+  await register(page, username);
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:3210",
+    viewport: { width: 390, height: 844 },
+  });
+  try {
+    const phone = await context.newPage();
+    await login(phone, username);
+    await page.locator("#new-purchase").click();
+    await page.locator("#item").fill("Appears when phone resumes");
+    await page.locator("#save").click();
+    await expect(page.locator("#purchase-count")).toHaveText("1");
+    await phone.evaluate(() =>
+      document.dispatchEvent(new Event("visibilitychange")),
+    );
+    await expect(phone.locator(".purchase-card")).toContainText(
+      "Appears when phone resumes",
+    );
+    await expect(phone.locator("#sync-message")).toContainText(`@${username}`);
+    await expect(phone.locator("#sync-message")).toContainText("1 saved items");
+    await phone.getByRole("button", { name: "View / edit" }).click();
+    await phone.locator("#notes").fill("Keep my typing");
+    await phone.evaluate(() => window.dispatchEvent(new Event("online")));
+    await expect(phone.locator("#notes")).toHaveValue("Keep my typing");
+    await expect(phone.locator("#sync-message")).toContainText("draft is safe");
+  } finally {
+    await context.close();
+  }
+});
+
+test("session changes made in another tab cannot leave stale account records visible", async ({
+  page,
+}) => {
+  const first = "session-" + crypto.randomUUID().slice(0, 8);
+  await register(page, first);
+  await page.locator("#new-purchase").click();
+  await page.locator("#item").fill("Private first account item");
+  await page.locator("#save").click();
+  await expect(page.locator("#purchase-count")).toHaveText("1");
+  // Change the cookie without BroadcastChannel: this also exercises browsers where it is unavailable.
+  await page.request.post("/api/auth/logout", {
+    headers: { Origin: "http://127.0.0.1:3210" },
+    data: {},
+  });
+  await page.request.post("/api/auth/register", {
+    headers: { Origin: "http://127.0.0.1:3210" },
+    data: {
+      username: "second-" + crypto.randomUUID().slice(0, 8),
+      name: "Other account",
+      password,
+    },
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("pageshow")));
+  await expect(page.locator("#sync-title")).toContainText("Other account");
+  await expect(page.locator("#purchase-count")).toHaveText("0");
+  await expect(page.locator(".purchase-card")).toHaveCount(0);
+});
+
+test("a delayed sync response cannot overwrite a purchase saved while it was in flight", async ({
+  page,
+}) => {
+  await register(page, "race-" + crypto.randomUUID().slice(0, 8));
+  await page.locator("#new-purchase").click();
+  await page.locator("#item").fill("Before race");
+  await page.locator("#save").click();
+  await expect(page.locator(".purchase-card")).toContainText("Before race");
+  await expect(page.locator("#sync-now")).toBeEnabled();
+  let release: () => void = () => {};
+  const blocked = new Promise<void>((resolve) => (release = resolve));
+  let intercepted: () => void = () => {};
+  const ready = new Promise<void>((resolve) => (intercepted = resolve));
+  await page.route(
+    "**/api/purchases",
+    async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      const response = await route.fetch();
+      intercepted();
+      await blocked;
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+  await page.locator("#sync-now").click();
+  await ready;
+  await page.getByRole("button", { name: "View / edit" }).click();
+  await page.locator("#item").fill("Newer saved version");
+  await page.locator("#save").click();
+  await expect(page.locator(".purchase-card")).toContainText(
+    "Newer saved version",
+  );
+  release();
+  await expect(page.locator("#sync-now")).toBeEnabled();
+  await expect(page.locator(".purchase-card")).toContainText(
+    "Newer saved version",
+  );
+  await page.locator("#sync-now").click();
+  await expect(page.locator(".purchase-card")).toContainText(
+    "Newer saved version",
+  );
+});

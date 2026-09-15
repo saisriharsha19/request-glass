@@ -61,7 +61,7 @@ The local parser is a conservative convenience for labeled receipts, not the mai
 
 IndexedDB v2 separates lightweight purchase metadata from legacy receipt images. Existing v1 receipts migrate transactionally. Lists do not reload all images on focus; cross-tab updates use BroadcastChannel. The first 30 matching records render initially with Show more, search updates are coalesced to animation frames, and date/price formatters are reused. Decorative motion settles after entry; no animation loops or backdrop blur. Reduced-motion preferences are respected.
 
-Search, sort, archive/restore, and the upcoming-deadline timeline operate locally. Calendar export creates `.ics` files for Apple, Google, or Outlook. Import the file to enable reminders; events request an alert three days before. Add an extra alert for nearer deadlines. Sample purchases are explicitly fictional and are saved only at the user's request.
+Search, sort, archive/restore, and the upcoming-deadline timeline operate locally. Calendar export creates `.ics` files for Apple, Google, or Outlook. Import the file to enable reminders; events use the advance alert selected in the item form (three days by default). Add an extra alert for nearer deadlines. Sample purchases are explicitly fictional and are saved only at the user's request.
 
 ## Deployment
 
@@ -72,3 +72,15 @@ Tests cover storage/migration, receipt/PDF extraction, no new file persistence, 
 ## Account linkage and Cloudflare migration
 
 The Cloudflare deployment and account setup are documented in [docs/cloudflare-launch.md](docs/cloudflare-launch.md). Open https://return-radar.return-radar.workers.dev. Accounts use native username/password login and one D1 database, with no external identity service. Save the recovery key shown at registration; it replaces email-based password recovery. Previous Google/Clerk users should create a native account and import device purchases once. Cloudflare AI assistance requires sign-in.
+
+## Calendar, documents and organization
+
+The Calendar workspace provides a month view and an agenda with upcoming, overdue and completed reminders. Each event can be opened in Google or Outlook Calendar, downloaded for Apple/other calendars, marked done, reopened, or moved seven days forward. Calendar links open a draft for you to confirm; downloaded calendar files are snapshots and do not subscribe an external calendar to later changes. All dates are day-based; check exact merchant cutoff times. Choose a calendar alert from the same day to 30 days before in the item form.
+
+Use custom reminder dates for bills and document renewals. Categories, tags, favorites, four starter templates and duplication help organize more than purchases. Search includes extracted document text and tags. Insights group saved amounts by currency and category, excluding archives; CSV export is available for spreadsheets.
+
+Upload PDF, PNG/JPEG/WebP, TXT, Markdown, CSV/TSV, HTML, RTF, DOCX, ODT, XLSX or PPTX. Office text is unpacked in a local worker; macros and external links are not executed. Original files are not retained. Limits: 10 MB for documents, 4 MB expanded Office XML, 50,000 extracted characters, and the existing PDF/image limits. Legacy/encrypted/unrecognized formats require a PDF or text export. Spreadsheet dates may appear as serial numbers and need manual review. Calendar import accepts up to 100 all-day, nonrecurring events from a 1 MB ICS file and presents a selection before saving; timed/recurring events are explicitly reported as skipped.
+
+Sync checks mobile visibility/resume, page restoration, focus and reconnect as well as periodic polling. A visible account username, item count and check time help compare devices. Editing suspends refresh to preserve your draft; closing the editor refreshes changes. Failed requests display an error, and stale reads cannot overwrite a newer successful save.
+
+The illustrated folder reacts only to nearby pointers and gives a brief double blink on tap or keyboard activation. Reduced-motion preferences disable these effects and the finite paper-cut celebrations. [Artwork prompt, provenance and interaction references](docs/design/illustration.md).

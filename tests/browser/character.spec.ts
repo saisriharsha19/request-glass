@@ -1,0 +1,35 @@
+import { test, expect } from '@playwright/test';
+test('illustrated folder tracks only nearby pointers and settles after a keyboard hello', async ({ page }) => {
+  await page.goto('/');
+  const character = page.locator('.desk-character');
+  await expect(character.locator('img')).toHaveJSProperty('naturalWidth', 1254);
+  const rect = (await character.boundingBox())!;
+  await page.mouse.move(rect.x + rect.width * .9, rect.y + rect.height * .2);
+  await expect.poll(() => page.locator('.folder-pupils').evaluate(el => (el as SVGElement).style.transform)).toContain('translate');
+  await page.mouse.move(10, 10);
+  await expect.poll(() => page.locator('.folder-pupils').evaluate(el => (el as SVGElement).style.transform)).toBe('');
+  await character.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.locator('.folder-eyes').evaluate(el => el.getAnimations().length)).toBe(1);
+  await expect.poll(() => page.locator('.folder-eyes').evaluate(el => el.getAnimations().length)).toBe(0);
+  expect(await character.boundingBox()).toEqual(rect);
+});
+test('phone touch blinks without layout growth and reduced motion stays still', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 320, height: 800 }, hasTouch: true, isMobile: true });
+  const page = await context.newPage();
+  await page.goto('/');
+  const character = page.locator('.desk-character');
+  await character.scrollIntoViewIfNeeded();
+  const before = await character.boundingBox();
+  await character.tap();
+  await expect.poll(() => page.locator('.folder-eyes').evaluate(el => el.getAnimations().length)).toBe(1);
+  await expect.poll(() => page.locator('.folder-eyes').evaluate(el => el.getAnimations().length)).toBe(0);
+  expect(await character.boundingBox()).toEqual(before);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await character.tap();
+  expect(await page.locator('.folder-eyes').evaluate(el => el.getAnimations().length)).toBe(0);
+  await page.goto('/account');
+  await expect(page.locator('.desk-character img')).toHaveJSProperty('naturalWidth', 1254);
+  await context.close();
+});

@@ -8,31 +8,32 @@
       name="description"
       content="Turn receipts into reminders. Keep return, cancellation, and warranty dates in one private place."
     />
-    <title>ReturnRadar — A little backup for your purchases</title>
+    <title>ReturnRadar — Records & reminders</title>
     <link rel="stylesheet" href="/style.css" />
     <script src="/app.js" type="module"></script>
+<script src="/character.js" type="module"></script>
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
         <a href="/" class="brand"
-          ><span class="radar-logo" aria-hidden="true">↗</span> Return<span
-            >Radar</span
-          ></a
+          ><span class="radar-logo" data-icon="mark" aria-hidden="true"></span>
+          Return<span>Radar</span></a
         >
-        <div class="workspace-label">A LITTLE AHEAD OF LIFE</div>
+        <div class="workspace-label">YOUR FILES</div>
         <nav aria-label="Purchases">
           <button class="nav-item selected" data-view="all">
-            <span>▦</span> Overview <b id="nav-count">0</b></button
+            <span data-icon="folder"></span> Overview
+            <b id="nav-count">0</b></button
           ><button class="nav-item" data-view="soon">
-            <span>◷</span> Coming up</button
+            <span data-icon="clock"></span> Coming up</button
           ><button class="nav-item" data-view="archived">
-            <span>▤</span> Archived
+            <span data-icon="archive"></span> Archived
           </button>
         </nav>
         <div class="sidebar-bottom">
           <div class="local-badge">
-            <span class="green-dot"></span> Your details. In your control.
+            <span class="green-dot"></span> Saved records
           </div>
           <p>Guest purchases stay here.<br />Sign in to sync your account.</p>
           <button id="export" class="sidebar-link">↓ Export backup</button
@@ -58,6 +59,12 @@
             >
           </div>
         </header>
+        <div
+          id="toast"
+          class="action-status"
+          role="status"
+          aria-live="polite"
+        ></div>
         <main>
           <section class="sync-strip" aria-label="Account and sync">
             <div>
@@ -71,64 +78,37 @@
               ><a id="sync-signin" href="/account">Sign in to sync ↗</a>
             </div>
           </section>
-          <section class="intro">
+          <section class="intro" aria-label="Your records">
             <div class="hero-copy">
-              <div class="eyebrow hero-kicker">
-                <span class="live-dot"></span> LESS BUYER’S REMORSE. MORE PEACE
-                OF MIND.
-              </div>
-              <h1>
-                Good purchases.<br /><em>Zero loose ends.</em
-                ><span class="title-spark" aria-hidden="true">✳</span>
-              </h1>
+              <div class="eyebrow">THE EVERYDAY FILE</div>
+              <h1>Receipts, records<br /><em>&amp; reminders.</em></h1>
               <p>
-                Keep the receipt. Catch the deadline.<br />Give future you one
-                less thing to remember.
+                A place for the details you need to keep.<br />And the dates you
+                need to act on.
               </p>
-              <div class="intro-actions">
-                <button class="primary" id="new-purchase">
-                  <span>＋</span> Add a purchase</button
-                ><span class="hand-note"
-                  >Small effort. Big exhale. <span>↗</span></span
-                >
-              </div>
-            </div>
-            <div class="hero-scene">
-              <div class="orbit orbit-one"></div>
-              <div class="orbit orbit-two"></div>
-              <div class="scene-spark">✧</div>
-              <div class="floating-receipt" aria-hidden="true">
-                <div class="receipt-brand">
-                  <span>↗</span> FUTURE YOU, INC.
-                </div>
-                <div class="receipt-subtitle">A LITTLE PEACE OF MIND</div>
-                <div class="receipt-dashes"></div>
-                <div class="receipt-line">The thing you love <b>✓</b></div>
-                <div class="receipt-line">
-                  The date you might forget <b>✓</b>
-                </div>
-                <div class="receipt-line">The receipt you’ll need <b>✓</b></div>
-                <div class="receipt-dashes"></div>
-                <div class="receipt-total">ALL IN ONE PLACE <b>Nice.</b></div>
-                <div class="barcode"></div>
-                <span>THANK YOU FOR THINKING AHEAD.</span>
-              </div>
-              <button
-                type="button"
-                class="radar-buddy"
-                id="radar-buddy"
-                aria-label="Say hello to Radar"
-                title="Psst. Say hello."
-              >
-                <div class="buddy-eye"></div>
-                <div class="buddy-eye"></div>
-                <div class="buddy-smile"></div>
+              <button class="primary" id="new-purchase">
+                <span aria-hidden="true">＋</span> Add a purchase
               </button>
-              <div class="deadline-sticker">
-                <span>✓</span> YOU’VE GOT THIS.
-              </div>
-              <span class="scene-mini-spark">✦</span>
             </div>
+<div class="desk-scene"><button class="desk-character" type="button" aria-label="Say hello to the folder" title="A little tap says hello">
+<img src="/art/desk-folder-v1.png" width="1254" height="1254" alt="An illustrated orange folder with receipts, a pencil and a calendar" decoding="async" />
+<svg class="folder-face" viewBox="0 0 100 100" aria-hidden="true"><g class="folder-eyes"><ellipse cx="54.5" cy="44" rx="2.2" ry="3" fill="#fff8df"/><ellipse cx="61" cy="45" rx="2.2" ry="3" fill="#fff8df"/><g class="folder-pupils" fill="#29392f"><ellipse cx="54.8" cy="44.3" rx="1" ry="1.6"/><ellipse cx="61.3" cy="45.3" rx="1" ry="1.6"/></g></g><path d="M55.5 50 Q57.5 52 60 50.6" fill="none" stroke="#583523" stroke-width=".65" stroke-linecap="round"/></svg>
+</button><button
+              class="next-date-card"
+              id="next-date-open"
+              type="button"
+              aria-label="Open your calendar"
+            >
+              <span class="index-tab">DATE FILE</span
+              ><span class="next-date-heading"
+                ><span id="next-date-label">NEXT UP</span
+                ><span data-icon="arrow"></span
+              ></span>
+              <strong id="next-date-number">—</strong
+              ><span id="next-date-month">No dates added</span
+              ><span class="index-rule"></span
+              ><span id="next-date-item">Add a deadline to an item.</span>
+            </button></div>
           </section>
           <div id="storage-warning" class="warning" hidden>
             Browser storage is unavailable. Your changes cannot be saved. Enable
@@ -136,7 +116,11 @@
           </div>
           <section class="stats" aria-label="Purchase overview">
             <div class="stat">
-              <span class="stat-icon violet" aria-hidden="true">▣</span>
+              <span
+                class="stat-icon violet"
+                aria-hidden="true"
+                data-icon="folder"
+              ></span>
               <div>
                 <span class="stat-label">On your radar</span
                 ><strong id="purchase-count">0</strong
@@ -144,7 +128,11 @@
               </div>
             </div>
             <div class="stat">
-              <span class="stat-icon amber" aria-hidden="true">◷</span>
+              <span
+                class="stat-icon amber"
+                aria-hidden="true"
+                data-icon="clock"
+              ></span>
               <div>
                 <span class="stat-label">Deadlines in 7 days</span
                 ><strong id="deadline-count">0</strong
@@ -152,7 +140,7 @@
               </div>
             </div>
             <div class="stat">
-              <span class="stat-icon mint">✓</span>
+              <span class="stat-icon mint" data-icon="document"></span>
               <div>
                 <span class="stat-label">Receipts kept</span
                 ><strong id="receipt-count">0</strong
@@ -160,7 +148,109 @@
               </div>
             </div>
           </section>
-          <div class="content-grid">
+          <nav class="workspace-tabs" aria-label="Workspace">
+            <button type="button" data-workspace="items" aria-pressed="true">
+              <span data-icon="folder"></span> Your items
+            </button>
+            <button type="button" data-workspace="planner" aria-pressed="false">
+              <span data-icon="calendar"></span> Calendar
+            </button>
+            <button
+              type="button"
+              data-workspace="insights"
+              aria-pressed="false"
+            >
+              <span data-icon="chart"></span> Insights
+            </button>
+          </nav>
+          <section id="planner-workspace" class="workspace-panel" hidden>
+            <div class="workspace-heading">
+              <div>
+                <span class="eyebrow">DATES &amp; DEADLINES</span>
+                <h2>Calendar</h2>
+                <p>
+                  See what’s due, record what’s done, and plan the next step.
+                </p>
+              </div>
+              <div class="planner-tools">
+                <button id="planner-new" class="primary">
+                  ＋ Add a reminder
+                </button>
+                <button id="planner-export" class="secondary">
+                  Export reminders</button
+                ><label class="secondary file-action"
+                  >Import calendar<input
+                    id="calendar-import"
+                    type="file"
+                    accept=".ics,text/calendar"
+                /></label>
+              </div>
+            </div>
+            <div class="planner-layout">
+              <section class="month-card" aria-label="Month calendar">
+                <div class="month-toolbar">
+                  <button
+                    id="month-prev"
+                    class="secondary"
+                    aria-label="Previous month"
+                  >
+                    ‹
+                  </button>
+                  <h3 id="month-title"></h3>
+                  <button
+                    id="month-next"
+                    class="secondary"
+                    aria-label="Next month"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div class="weekdays" aria-hidden="true">
+                  <span>M</span><span>T</span><span>W</span><span>T</span
+                  ><span>F</span><span>S</span><span>S</span>
+                </div>
+                <div id="month-grid" class="month-grid"></div>
+                <button id="month-today" class="text-button">
+                  Back to today
+                </button>
+              </section>
+              <section class="agenda-card">
+                <div class="agenda-heading">
+                  <h3 id="agenda-title">Your agenda</h3>
+                  <label
+                    >Show<select id="agenda-filter">
+                      <option value="upcoming">Upcoming</option>
+                      <option value="overdue">Overdue</option>
+                      <option value="all">All open</option>
+                      <option value="completed">Completed</option>
+                    </select></label
+                  >
+                </div>
+                <button id="clear-day" class="text-button" hidden>
+                  Show all dates
+                </button>
+                <div id="agenda-list"></div>
+                <p id="agenda-limit" class="small muted"></p>
+              </section>
+            </div>
+          </section>
+          <section id="insights-workspace" class="workspace-panel" hidden>
+            <div class="workspace-heading">
+              <div>
+                <span class="eyebrow">AMOUNTS ON RECORD</span>
+                <h2>Spending</h2>
+                <p>
+                  Saved amounts, grouped by currency. Archived items are
+                  excluded; currencies are never mixed.
+                </p>
+              </div>
+              <button id="export-csv" class="secondary">
+                Download spreadsheet CSV
+              </button>
+            </div>
+            <div id="spending-summary" class="insights-grid"></div>
+          </section>
+          <div class="content-grid" id="items-workspace">
             <section class="purchase-section">
               <div class="section-heading">
                 <h2 id="list-title">
@@ -185,6 +275,24 @@
                 ><button data-filter="cancel">Cancellations</button
                 ><button data-filter="warranty">Warranties</button>
               </div>
+              <div class="organize-tools">
+                <label
+                  >Category<select id="category-filter">
+                    <option value="all">Every category</option>
+                  </select></label
+                ><label class="favorite-filter"
+                  ><input id="favorites-only" type="checkbox" /> Favorites
+                  only</label
+                ><label
+                  >Start with a template<select id="template-select">
+                    <option value="">Choose a template…</option>
+                    <option value="subscription">Subscription</option>
+                    <option value="bill">Bill payment</option>
+                    <option value="warranty">Warranty</option>
+                    <option value="document">Document renewal</option>
+                  </select></label
+                >
+              </div>
               <div class="list-tools">
                 <span id="list-description"
                   >Your purchases, sorted by next deadline</span
@@ -205,81 +313,78 @@
             <aside class="right-column">
               <section class="timeline-card">
                 <div class="timeline-heading">
-                  <h2>Just around the corner</h2>
-                  <span class="timeline-icon">↗</span>
+                  <h2>Next on the list</h2>
+                  <span class="timeline-icon" data-icon="calendar"></span>
                 </div>
-                <p>The next dates worth remembering.</p>
+                <p>Your next three open dates.</p>
                 <div id="upcoming-list"></div>
                 <button id="calendar-all" class="secondary">
                   ↓ Export all reminders</button
                 ><small>Import into Apple, Google or Outlook Calendar.</small>
               </section>
-              <section
-                class="calendar-card"
-                aria-label="A note from future you"
-              >
-                <div class="mini-icon">✳</div>
-                <span class="eyebrow">A FAVOR FOR FUTURE YOU</span>
-                <h2 id="future-note">
-                  Receipts are boring.<br />Keeping your options?<br />Pretty
-                  great.
-                </h2>
-                <p>
-                  Save the little details now. Find them in seconds when you
-                  need them.
-                </p>
-                <button class="note-shuffle" id="note-shuffle">
-                  Another little thought <span aria-hidden="true">↗</span>
+              <section class="tools-card">
+                <div class="eyebrow">USE YOUR RECORDS</div>
+                <h3>Take them with you.</h3>
+                <button id="quick-calendar" class="tool-row" type="button">
+                  <span data-icon="calendar"></span
+                  ><span
+                    >Open calendar<small
+                      >View dates and set reminders</small
+                    ></span
+                  ><span data-icon="arrow"></span></button
+                ><button id="quick-csv" class="tool-row" type="button">
+                  <span data-icon="chart"></span
+                  ><span
+                    >Download spreadsheet<small
+                      >Amounts, dates and notes as CSV</small
+                    ></span
+                  ><span data-icon="arrow"></span>
                 </button>
+                <p class="fine-print">
+                  Source files are processed temporarily. Your reviewed text and
+                  details are saved.
+                </p>
               </section>
-              <section class="how-card">
-                <h3>A receipt. A little peace of mind.</h3>
-                <div>
-                  <b>1</b>
-                  <p>
-                    <strong>Drop it in</strong
-                    ><span>Paste an order or add a receipt photo.</span>
-                  </p>
-                </div>
-                <div>
-                  <b>2</b>
-                  <p>
-                    <strong>Give it a quick look</strong
-                    ><span>Review details and confirm the dates.</span>
-                  </p>
-                </div>
-                <div>
-                  <b>3</b>
-                  <p>
-                    <strong>Keep your options open</strong
-                    ><span>Save it and add calendar reminders.</span>
-                  </p>
-                </div>
-              </section>
-              <p class="fine-print">
-                Your dates. Your receipts. Your device.<br />Back them up
-                whenever you like.
-              </p>
             </aside>
           </div>
           <footer>
-            <span>Less “I wish I’d remembered.” More peace of mind.</span
-            ><button
-              class="little-secret"
-              id="little-secret"
-              aria-label="A little surprise"
-            >
-              Made for the everyday stuff. <span aria-hidden="true">✧</span>
+            <span
+              >ReturnRadar <span class="footer-divider">/</span> Records &amp;
+              reminders</span
+            ><button id="focus-search" class="keyboard-hint" type="button">
+              Find an item <kbd>/</kbd>
             </button>
           </footer>
         </main>
       </div>
     </div>
+    <dialog
+      id="calendar-import-dialog"
+      class="utility-dialog"
+      aria-labelledby="calendar-import-title"
+    >
+      <div class="modal-header">
+        <h2 id="calendar-import-title">Import calendar dates</h2>
+        <button
+          type="button"
+          id="close-calendar-import"
+          class="icon-button"
+          aria-label="Close calendar import"
+        >
+          ×
+        </button>
+      </div>
+      <p id="calendar-import-status" role="status"></p>
+      <div id="calendar-import-preview"></div>
+      <button type="button" id="confirm-calendar-import" class="primary">
+        Import selected reminders
+      </button>
+    </dialog>
     <dialog id="purchase-dialog">
       <form id="purchase-form">
         <div class="modal-header">
           <div>
-            <div class="eyebrow">A LITTLE FUTURE-PROOFING</div>
+            <div class="eyebrow">NEW RECORD</div>
             <h2 id="dialog-title">Add a purchase</h2>
           </div>
           <button
@@ -293,19 +398,19 @@
         </div>
         <div class="capture-tabs" role="group" aria-label="Add purchase method">
           <button type="button" data-method="paste" aria-pressed="true">
-            ≋ Paste receipt</button
+            Paste text</button
           ><button type="button" data-method="image" aria-pressed="false">
-            ↑ Image or PDF</button
+            Upload a document</button
           ><button type="button" data-method="manual" aria-pressed="false">
-            ＋ Enter manually
+            Enter details
           </button>
         </div>
         <section class="capture-section" data-method="paste">
           <div class="image-instructions">
-            <strong>A home for that receipt.</strong
+            <strong>Read a document</strong
             ><span
-              >Choose a clear image. We’ll read the details on this
-              device.</span
+              >Choose a photo, PDF, Office document or text file. Reading
+              happens on this device.</span
             >
           </div>
           <label for="receipt-text">Paste a receipt or order confirmation</label
@@ -317,18 +422,18 @@
           ></textarea>
           <div class="capture-actions">
             <label class="upload-button" role="button" tabindex="0"
-              >↑ Add image or PDF<input
+              >Choose a file<input
                 id="receipt-file"
                 type="file"
-                accept="image/png,image/jpeg,image/webp,application/pdf,.pdf"
+                accept="image/png,image/jpeg,image/webp,application/pdf,.pdf,.txt,.md,.csv,.tsv,.html,.htm,.rtf,.docx,.odt,.xlsx,.pptx"
                 hidden /></label
             ><button type="button" id="extract" class="secondary">
               Find the details ✧
             </button>
           </div>
           <p id="ocr-status" class="small" role="status">
-            Images up to 8 MB. PDFs up to 10 MB / 10 pages. Read on your device;
-            Uploaded files are not saved.
+            Images up to 8 MB. PDF, Office and text documents up to 10 MB (PDF:
+            10 pages). Read on your device; Uploaded files are not saved.
           </p>
           <progress
             id="ocr-progress"
@@ -344,9 +449,9 @@
         </section>
         <section class="ai-assist">
           <div>
-            <span class="ai-mark">✦</span>
+            <span class="ai-mark" data-icon="document"></span>
             <div>
-              <strong>A little help with the fine print</strong>
+              <strong>Optional document assistance</strong>
               <p id="ai-status" role="status">
                 Optional: sends extracted text and prepared receipt images
                 together to NVIDIA NIM. Uploads are temporary; review
@@ -371,7 +476,7 @@
         </div>
         <div class="form-grid">
           <label class="wide"
-            >What did you buy?<input
+            >What would you like to keep track of?<input
               id="item"
               maxlength="180"
               required
@@ -413,12 +518,38 @@
             >Cancel / trial deadline<input id="cancel" type="date" /></label
           ><label>Warranty ends<input id="warranty" type="date" /></label
           ><label>Price check reminder<input id="price" type="date" /></label
+          ><label>Custom reminder date<input id="reminder" type="date" /></label
+          ><label
+            >Reminder name<input
+              id="reminderLabel"
+              maxlength="80"
+              placeholder="Renew passport, pay a bill…"
+          /></label>
+          <label
+            >Calendar alert<select id="leadDays">
+              <option value="0">On the day</option>
+              <option value="1">1 day before</option>
+              <option value="3" selected>3 days before</option>
+              <option value="7">1 week before</option>
+              <option value="14">2 weeks before</option>
+              <option value="30">30 days before</option>
+            </select></label
+          >
+          <label>Category<select id="category"></select></label
           ><label class="wide"
+            >Tags (comma separated)<input
+              id="tags"
+              maxlength="309"
+              placeholder="home, tax, gift" /></label
+          ><label class="favorite-filter"
+            ><input id="favorite" type="checkbox" /> Keep in favorites</label
+          >
+          <label class="wide"
             >Notes / policy details<textarea
               id="notes"
               rows="2"
               maxlength="3000"
-              placeholder="Anything future you should know…"
+              placeholder="Reference numbers, terms, or other details…"
             ></textarea>
           </label>
         </div>
@@ -442,6 +573,5 @@
         </button>
       </form>
     </dialog>
-    <div id="toast" role="status" aria-live="polite"></div>
   </body>
 </html>

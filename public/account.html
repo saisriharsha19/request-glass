@@ -7,23 +7,29 @@
     <title>Your account — ReturnRadar</title>
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/account.js"></script>
+    <script type="module" src="/icons.js"></script>
+<script type="module" src="/character.js"></script>
   </head>
   <body class="account-page native-account">
     <header class="account-header">
       <a class="brand" href="/"
-        ><span class="radar-logo" aria-hidden="true">↗</span> ReturnRadar</a
+        ><span class="radar-logo" data-icon="mark" aria-hidden="true"></span>
+        ReturnRadar</a
       ><a class="back-link" href="/">← Your purchases</a>
     </header>
     <main class="account-layout">
       <section class="account-intro">
-        <span class="eyebrow">YOUR RADAR. WHEREVER YOU ARE.</span>
-        <h1>A little less<br /><em>“where did I put it?”</em></h1>
+        <span class="eyebrow">YOUR RECORDS, ON EVERY DEVICE</span>
+        <h1>One account.<br /><em>The same records.</em></h1>
         <p>
           One account for the things you’re keeping track of. Pick up on your
           phone, carry on at your desk.
         </p>
-        <div class="account-scope">
-          <strong>Details travel. Original files don’t.</strong>
+        <button class="desk-character" type="button" aria-label="Say hello to the folder" title="A little tap says hello">
+<img src="/art/desk-folder-v1.png" width="1254" height="1254" alt="An illustrated orange folder with receipts, a pencil and a calendar" decoding="async" />
+<svg class="folder-face" viewBox="0 0 100 100" aria-hidden="true"><g class="folder-eyes"><ellipse cx="54.5" cy="44" rx="2.2" ry="3" fill="#fff8df"/><ellipse cx="61" cy="45" rx="2.2" ry="3" fill="#fff8df"/><g class="folder-pupils" fill="#29392f"><ellipse cx="54.8" cy="44.3" rx="1" ry="1.6"/><ellipse cx="61.3" cy="45.3" rx="1" ry="1.6"/></g></g><path d="M55.5 50 Q57.5 52 60 50.6" fill="none" stroke="#583523" stroke-width=".65" stroke-linecap="round"/></svg>
+</button><div class="account-scope">
+          <strong>What gets synced</strong>
           <p>
             Saved purchases and dates sync to your account. Uploaded PDFs and
             photos are processed temporarily and aren’t stored in the database.
@@ -37,7 +43,7 @@
         </p>
       </section>
       <section class="account-panel" aria-label="Your ReturnRadar account">
-        <div class="account-badge" aria-hidden="true">↗</div>
+        <div class="account-badge" data-icon="folder" aria-hidden="true"></div>
         <h2 id="account-title">Welcome back.</h2>
         <p id="account-status" role="status">Checking your account…</p>
         <div id="auth-forms" hidden>
