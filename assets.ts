@@ -24,6 +24,7 @@ export const assets: Record<string, string> = {
   "/vendor/fflate.js": "node_modules/fflate/esm/browser.js",
   "/sync.js": "public/sync.js",
   "/ui-state.js": "public/ui-state.js",
+  "/drafts.js": "public/drafts.js",
   "/app.js": "public/app.js",
   "/logic.js": "public/logic.js",
   "/pdf.js": "public/pdf.js",

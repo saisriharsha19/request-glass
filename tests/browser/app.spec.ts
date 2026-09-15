@@ -528,7 +528,6 @@ test("small phones keep navigation usable and the purchase form within the viewp
   await expect(page.locator("#month-grid")).toBeVisible();
   await page.locator('[data-workspace="items"]').click();
   await page.locator("#new-purchase").click();
-  await page.locator('button[data-method="manual"]').click();
   await page.locator("#item").fill("Phone-sized purchase form");
   await page.setViewportSize({ width: 320, height: 380 });
   await page.locator("#save").click();

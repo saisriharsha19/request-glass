@@ -380,16 +380,20 @@
             ×
           </button>
         </div>
-        <div class="capture-tabs" role="group" aria-label="Add purchase method">
-          <button type="button" data-method="paste" aria-pressed="true">
-            Paste text</button
-          ><button type="button" data-method="image" aria-pressed="false">
-            Upload a document</button
-          ><button type="button" data-method="manual" aria-pressed="false">
-            Enter details
-          </button>
+        <p id="draft-status" class="fine-print" role="status">Your unfinished details stay in this tab. Uploaded files are temporary.</p>
+        <div class="form-grid record-basics">
+<label class="wide"
+            >What would you like to keep track of?<input
+              id="item"
+              maxlength="180"
+              required
+              placeholder="e.g. Noise-cancelling headphones" /></label
+          >
+<label class="favorite-filter"
+            ><input id="favorite" type="checkbox" /><span>Keep in favorites</span></label
+          >
         </div>
-        <section class="capture-section" data-method="paste">
+        <section class="capture-section">
           <div class="image-instructions">
             <strong>Read a document</strong
             ><span
@@ -397,7 +401,7 @@
               happens on this device.</span
             >
           </div>
-          <label for="receipt-text">Paste a receipt or order confirmation</label
+          <label for="receipt-text">Add a file or paste text (optional)</label
           ><textarea
             id="receipt-text"
             maxlength="50000"
@@ -412,7 +416,7 @@
                 accept="image/png,image/jpeg,image/webp,application/pdf,.pdf,.txt,.md,.csv,.tsv,.html,.htm,.rtf,.docx,.odt,.xlsx,.pptx"
                 hidden /></label
             ><button type="button" id="extract" class="secondary">
-              Find the details ✧
+              Read text locally
             </button>
           </div>
           <p id="ocr-status" class="small" role="status">
@@ -435,7 +439,7 @@
           <div>
             <span class="ai-mark" data-icon="document"></span>
             <div>
-              <strong>Optional document assistance</strong>
+              <strong>Fill the form from your document</strong>
               <p id="ai-status" role="status">
                 Optional: sends extracted text and prepared receipt images
                 together to NVIDIA NIM. Uploads are temporary; review
@@ -444,7 +448,7 @@
             </div>
           </div>
           <button id="ai-fill" type="button" class="ai-button">
-            Read with AI <span>↗</span>
+            Fill details with AI <span>↗</span>
           </button>
           <div id="ai-evidence"></div>
         </section>
@@ -459,13 +463,8 @@
           <small>The details you’ll want later</small>
         </div>
         <div class="form-grid">
-          <label class="wide"
-            >What would you like to keep track of?<input
-              id="item"
-              maxlength="180"
-              required
-              placeholder="e.g. Noise-cancelling headphones" /></label
-          ><label
+
+          <label
             >Store or service<input
               id="merchant"
               maxlength="100"
@@ -525,8 +524,6 @@
               id="tags"
               maxlength="309"
               placeholder="home, tax, gift" /></label
-          ><label class="favorite-filter"
-            ><input id="favorite" type="checkbox" /> Keep in favorites</label
           >
           <label class="wide"
             >Notes / policy details<textarea
@@ -546,7 +543,7 @@
           <button id="delete" class="danger" type="button" hidden>
             Delete purchase</button
           ><button type="button" id="cancel-dialog" class="secondary">
-            Cancel</button
+            Discard draft</button
           ><button type="submit" class="primary" id="save">
             Save purchase →
           </button>

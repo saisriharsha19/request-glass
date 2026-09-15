@@ -61,6 +61,7 @@ export default {
           },
           401,
         );
+      if(request.headers.get('x-account-id') && request.headers.get('x-account-id')!==user.id)return json({error:'Your account changed. Reopen the form before using AI.'},409);
       // Cloudflare's per-location limiter is an abuse guard, not a billing cap.
       if (
         !env.AI_RATE_LIMITER ||
@@ -89,11 +90,12 @@ export default {
         return json(
           {
             error:
-              "Use up to 20,000 characters and one prepared receipt image under 1.2 MB.",
+              "Use up to 50,000 characters and one prepared receipt image under 1.2 MB.",
           },
           400,
         );
       try {
+        const notices: string[]=[];
         const fields = await extractWithNim(
           body.text,
           env.NVIDIA_API_KEY,
@@ -101,8 +103,9 @@ export default {
           fetch,
           body.images ?? [],
           env.NVIDIA_VISION_MODEL || "meta/llama-3.2-11b-vision-instruct",
+          notices,
         );
-        return json({ fields });
+        return json({ fields, notices });
       } catch {
         return json(
           {

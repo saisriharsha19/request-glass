@@ -1,3 +1,4 @@
+import {readDraft,saveDraft,removeDraft,setOpenDraft,getOpenDraft} from '/drafts.js';
 import {createViewState} from '/ui-state.js';
 import {linkify} from '/links.js';
 import { connectedEvents, connectedSources, setCalendarRange, calendarPage, loadCalendarPage } from "/calendar-sources.js";
@@ -147,6 +148,7 @@ const fields = [
   ...Object.keys(kinds),
   "notes",
   "reminderLabel",
+  "category",
 ];
 let db,
   purchases = [],
@@ -586,12 +588,23 @@ function preview() {
   };
   root.append(img, remove);
 }
+let formOwner=null, draftTimer, skipDraft=false, formBaseline='';
+const draftFields=[...fields,'tags','leadDays'];
+function formValues(){return {...Object.fromEntries(draftFields.map(key=>[key,$('#'+key).value])),favorite:$('#favorite').checked};}
+function rememberDraft(){
+ if(skipDraft||!$('#purchase-dialog').open||formOwner!==(sync.user?.id||'guest'))return;
+ const values=formValues();
+ if(JSON.stringify(values)===formBaseline){removeDraft(formOwner,editing);return;}
+ const saved=saveDraft(formOwner,editing,{version:editingVersion,baseline:formBaseline,values,touched:[...touchedFields],draftId,scroll:$('#purchase-dialog').scrollTop});
+ $('#draft-status').textContent=saved?'Draft saved in this tab. Source text and uploads stay temporary.':'Draft is only in memory: browser session storage is unavailable.';
+}
 async function openPurchase(p = null) {
   await accountLoaded;
   if (!accountReady) {
     syncMessage("Your account is still loading. Please retry in a moment.");
     return;
   }
+  formOwner=sync.user?.id||'guest';skipDraft=false;
   visionImages = [];
   transientReceipt = false;
   const sequence = ++openSequence;
@@ -603,7 +616,7 @@ async function openPurchase(p = null) {
   $("#ai-evidence").replaceChildren();
   for (const field of document.querySelectorAll(".ai-filled"))
     field.classList.remove("ai-filled");
-  setMethod("paste");
+
   editing = p?.id || null;
   editingVersion = p?._version || 0;
   draftId = crypto.randomUUID();
@@ -623,8 +636,15 @@ async function openPurchase(p = null) {
   $("#favorite").checked = !!p?.favorite;
   $("#reminderLabel").value = p?.reminderLabel || "";
   $("#leadDays").value = String(p?.leadDays ?? 3);
+  formBaseline=JSON.stringify(formValues());
+  let draft=readDraft(formOwner,editing,editingVersion);
+  if(draft&&editing&&draft.baseline!==formBaseline){removeDraft(formOwner,editing);draft=null;}
+  if(draft){for(const [key,value] of Object.entries(draft.values)){if(key==='favorite')$('#favorite').checked=value;else if($('#'+key))$('#'+key).value=value;}for(const key of draft.touched)touchedFields.add(key);if(!editing&&draft.draftId)draftId=draft.draftId;}
+  $('#draft-status').textContent=draft?'Unsaved details restored. Attach a file again if you need another image reading.':'Your unfinished details stay in this tab. Uploaded files are temporary.';
   preview();
   $("#purchase-dialog").showModal();
+  setOpenDraft(formOwner,editing);
+  if(draft)requestAnimationFrame(()=>$('#purchase-dialog').scrollTop=draft.scroll||0);
   if (p?.hasImage) {
     $("#save").disabled = true;
     try {
@@ -672,6 +692,10 @@ function stopWork() {
   if (oldWorker) oldWorker.terminate().catch(() => {});
 }
 function closeDialog() {
+  clearTimeout(draftTimer);
+  // The close event runs after open becomes false; capture values explicitly before teardown.
+  if(!skipDraft&&formOwner===(sync.user?.id||'guest')&&JSON.stringify(formValues())!==formBaseline)saveDraft(formOwner,editing,{version:editingVersion,baseline:formBaseline,values:formValues(),touched:[...touchedFields],draftId,scroll:$('#purchase-dialog').scrollTop});
+  setOpenDraft(formOwner,undefined);
   queueMicrotask(() => refreshSync({ force: true, session: true }));
   visionImages = [];
   if (transientReceipt) receiptImage = null;
@@ -709,8 +733,10 @@ function loadTesseract() {
   return tesseractLoading;
 }
 $("#purchase-dialog").addEventListener("close", closeDialog);
-$("#close-dialog").onclick = $("#cancel-dialog").onclick = () =>
-  $("#purchase-dialog").close();
+$('#close-dialog').onclick=()=>$('#purchase-dialog').close();
+$('#cancel-dialog').onclick=()=>{skipDraft=true;removeDraft(formOwner,editing);$('#purchase-dialog').close();};
+for(const name of ['input','change'])$('#purchase-form').addEventListener(name,event=>{if(event.target.id==='receipt-text'||event.target.id==='receipt-file')return;clearTimeout(draftTimer);draftTimer=setTimeout(rememberDraft,150);});
+window.addEventListener('pagehide',rememberDraft);
 $("#new-purchase").onclick = () => openPurchase();
 function extract() {
   const text = $("#receipt-text").value.trim();
@@ -718,12 +744,13 @@ function extract() {
   const details = extractReceipt(text);
   let count = 0;
   for (const [key, value] of Object.entries(details))
-    if (value !== "" && (key !== "currency" || details.amount)) {
+    if (value !== "" && !touchedFields.has(key) && (key !== "currency" || details.amount)) {
       $(`#${key}`).value = value;
       count++;
     }
   $("#ocr-status").textContent =
     `${count} suggested fields filled. Review every detail below. Dates without a year or with ambiguous numeric formats are left blank.`;
+  rememberDraft();
 }
 $("#extract").onclick = extract;
 $("#receipt-file").onchange = async (event) => {
@@ -890,6 +917,7 @@ $("#purchase-form").onsubmit = async (event) => {
   try {
     await savePurchase(p, editingVersion);
     await afterWrite();
+    skipDraft=true;removeDraft(formOwner,editing);
     $("#purchase-dialog").close();
     if (isNew) celebrate(successPoint);
     toast(
@@ -931,6 +959,7 @@ $("#delete").onclick = async () => {
         receipts.delete(editing);
       });
     await afterWrite();
+    skipDraft=true;removeDraft(formOwner,editing);
     $("#purchase-dialog").close();
     toast("Purchase deleted.");
   } catch (error) {
@@ -1075,7 +1104,7 @@ $("#template-select").onchange = async (event) => {
   await openPurchase();
   for (const [key, value] of Object.entries(template))
     $(`#${key}`).value = value;
-  setMethod("manual");
+
 };
 let activeWorkspace="items", viewReady=false, applyingView=false, savedScroll={}, restoreFrame=0;
 const viewStore=createViewState();
@@ -1105,7 +1134,7 @@ for (const button of document.querySelectorAll("[data-workspace]")) {
 }
 $("#planner-new").onclick = async () => {
   await openPurchase();
-  setMethod("manual");
+
   $("#reminderLabel").value = "Reminder";
 };
 planner = createPlanner({
@@ -1255,15 +1284,6 @@ $("#today-label").textContent = new Date().toLocaleDateString(undefined, {
   month: "short",
   day: "numeric",
 });
-function setMethod(method) {
-  $(".capture-section").dataset.method = method;
-  for (const b of document.querySelectorAll("button[data-method]"))
-    b.setAttribute("aria-pressed", String(b.dataset.method === method));
-  // Input methods change the source panel, never move focus or jump down the form.
-}
-for (const b of document.querySelectorAll("button[data-method]"))
-  b.onclick = () => setMethod(b.dataset.method);
-
 for (const label of document.querySelectorAll('label[role="button"]'))
   label.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -1283,7 +1303,8 @@ $("#ai-fill").onclick = async () => {
   const run = ++ocrRun;
   const controller = new AbortController();
   aiController = controller;
-  const timeout = setTimeout(() => controller.abort(), 50000);
+  const timeout = setTimeout(() => controller.abort(), 100000);
+  let completed=false;
   setBusy(true);
   $("#ocr-progress").hidden = true;
   $(".ai-assist").setAttribute("aria-busy", "true");
@@ -1291,18 +1312,12 @@ $("#ai-fill").onclick = async () => {
     "Reading the text and available receipt pages together with NVIDIA NIM… You can stop at any time.";
   $("#ai-evidence").replaceChildren();
   try {
-    const { getAuthConfig, getSession } = await import("/auth-client.js");
-    const config = await getAuthConfig();
-    const session = config.aiRequiresLogin ? await getSession() : null;
-    if (config.aiRequiresLogin && !session?.user)
-      throw new Error(
-        "Sign in from Your account to use AI assistance. Local scanning still works.",
-      );
     if (run !== ocrRun) return;
     const response = await fetch("/api/ai/extract", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-Account-ID": sync.user?.id || "",
       },
       body: JSON.stringify({
         text,
@@ -1311,7 +1326,7 @@ $("#ai-fill").onclick = async () => {
       signal: controller.signal,
     });
     const result = await response.json();
-    if (run !== ocrRun) return;
+    if (run !== ocrRun || formOwner!==(sync.user?.id||'guest')) return;
     if (!response.ok)
       throw new Error(result.error || "AI assistance is unavailable.");
     const current = Object.fromEntries(
@@ -1339,14 +1354,15 @@ $("#ai-fill").onclick = async () => {
       );
     }
     if (merged.applied.length) $("#ai-evidence").append(evidence);
-    const calendarDates=merged.applied.filter(key=>Object.hasOwn(kinds,key));
-    if(calendarDates.length){
-      const summary=el("p","ai-date-summary",calendarDates.map(key=>`${key === "reminder" ? $("#reminderLabel").value || "Reminder" : kinds[key]}: ${fmtDate(merged.values[key])}`).join(" · "));
-      $("#ai-evidence").prepend(summary);
-    }
+    const calendarDates=['purchased',...Object.keys(kinds)].filter(key=>$('#'+key).value);
+    const dateSummary=el('p','ai-date-summary',calendarDates.length?'Dates in this form: '+calendarDates.map(key=>`${key==='purchased'?'Purchased':key==='reminder'?$('#reminderLabel').value||'Reminder':kinds[key]}: ${fmtDate($('#'+key).value)}`).join(' · '):'No calendar date is confirmed yet. Check the source and add any missing date below.');
+    $('#ai-evidence').prepend(dateSummary);
+    completed=Object.keys(result.fields||{}).length>0;
+    rememberDraft();
     $("#ai-status").textContent = merged.applied.length
       ? `${merged.applied.length} suggestions ready for review. Your manual edits were kept. Temporary upload cleared.`
-      : "No new supported details. Your entries were kept. Temporary upload cleared.";
+      : "No supported details found. Your entries and temporary source are still available; check the document or edit the fields below.";
+    if(result.notices?.length)$('#ai-status').textContent+=' '+result.notices.join(' ');
   } catch (error) {
     if (run === ocrRun)
       $("#ai-status").textContent =
@@ -1356,8 +1372,8 @@ $("#ai-fill").onclick = async () => {
   } finally {
     clearTimeout(timeout);
     if (run === ocrRun) {
-      visionImages = [];
-      if (transientReceipt) {
+      if(completed)visionImages = [];
+      if (completed && transientReceipt) {
         receiptImage = null;
         preview();
       }
@@ -1422,7 +1438,7 @@ async function importPdf(file) {
     preview();
     $("#receipt-text").value = result.text;
     extract();
-    setMethod("paste");
+
     $("#ocr-status").textContent =
       `Read ${result.pages} PDF page${result.pages === 1 ? "" : "s"}${result.scanned ? ` (${result.scanned} scanned)` : ""}. Review the details. Only extracted text is kept; the PDF file is not stored.`;
   } catch (error) {
@@ -1514,3 +1530,8 @@ for(const name of ['input','change','click'])document.addEventListener(name,even
 let scrollTimer;
 window.addEventListener('scroll',()=>{clearTimeout(scrollTimer);scrollTimer=setTimeout(()=>{if(viewReady&&!document.querySelector('dialog[open]')){savedScroll[activeWorkspace]=scrollY;saveView();}},150);},{passive:true});
 window.addEventListener('pagehide',()=>{if(viewReady){savedScroll[activeWorkspace]=scrollY;saveView();}});
+
+accountLoaded.then(async()=>{const id=getOpenDraft(sync.user?.id||'guest');if(!id)return;const record=id==='new'?null:purchases.find(p=>p.id===id);if(id!=='new'&&!record)return;if(readDraft(sync.user?.id||'guest',record?.id,record?._version||0))await openPurchase(record);});
+window.addEventListener('tuckday-account-changed',event=>{
+  if($('#purchase-dialog').open&&formOwner!==(event.detail?.userId||'guest')){skipDraft=true;$('#purchase-dialog').close();}
+});

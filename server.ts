@@ -98,7 +98,7 @@ Bun.serve({
         return json(
           {
             error:
-              "Use up to 20,000 characters and one prepared receipt image under 1.2 MB.",
+              "Use up to 50,000 characters and one prepared receipt image under 1.2 MB.",
           },
           400,
         );
@@ -112,6 +112,7 @@ Bun.serve({
       aiCalls++;
       aiInFlight++;
       try {
+        const notices: string[]=[];
         const fields = await extractWithNim(
           body.text,
           key,
@@ -120,8 +121,9 @@ Bun.serve({
           body.images ?? [],
           process.env.NVIDIA_VISION_MODEL ||
             "meta/llama-3.2-11b-vision-instruct",
+          notices,
         );
-        return json({ fields });
+        return json({ fields, notices });
       } catch {
         return json(
           {

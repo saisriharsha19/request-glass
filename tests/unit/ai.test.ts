@@ -137,3 +137,14 @@ test('exact descriptive strings from NIM are accepted without fabricating date o
  const d=validateDraft({reminderLabel:'Appointment date',notes:'Time: 10:30 UTC',merchant:'Invented',purchased:{value:'2026-10-12',evidence:'Appointment date: October 12, 2026'},amount:{value:'0.00',evidence:'Time: 10:30 UTC'}},receipt);
  expect(d.reminderLabel?.value).toBe('Appointment date');expect(d.notes?.value).toBe('Time: 10:30 UTC');expect(d.merchant).toBeUndefined();expect(d.purchased).toBeUndefined();expect(d.amount).toBeUndefined();
 });
+
+test('a failed image reader falls back to text in the same request and fills date, label and category',async()=>{
+ let calls=0;const notices:string[]=[];
+ const fields=await extractWithNim('Electricity bill. Payment due: October 12, 2026.','key','model',async(_url,init)=>{calls++;const body=JSON.parse(init.body as string);if(body.messages[0].role==='user')return new Response('unavailable',{status:503});return Response.json({choices:[{message:{content:JSON.stringify({category:{value:'Bills',evidence:'Electricity bill.'},reminder:{value:'2026-10-12',evidence:'Payment due: October 12, 2026.'},reminderLabel:{value:'Payment due',evidence:'Payment due: October 12, 2026.'}})},finish_reason:'stop'}]});},['data:image/jpeg;base64,/9j/AAAA'],'vision',notices);
+ expect(calls).toBe(2);expect(fields.category.value).toBe('Bills');expect(fields.reminder.value).toBe('2026-10-12');expect(fields.reminderLabel.value).toBe('Payment due');expect(notices).toHaveLength(1);
+});
+test('one structured repair recovers rejected date shape without another image upload',async()=>{
+ let calls=0;
+ const fields=await extractWithNim('Return by October 12, 2026.','key','model',async()=>Response.json({choices:[{message:{content:JSON.stringify(++calls===1?{return:'2026-10-12'}:{return:{value:'2026-10-12',evidence:'Return by October 12, 2026.'}})},finish_reason:'stop'}]}));
+ expect(calls).toBe(2);expect(fields.return.value).toBe('2026-10-12');
+});

@@ -30,7 +30,6 @@ test("native accounts sync two browsers, reject stale edits, and sync deletion",
   const username = "sync-" + crypto.randomUUID().slice(0, 10);
   await register(page, username);
   await page.locator("#new-purchase").click();
-  await page.locator('button[data-method="manual"]').click();
   await page.locator("#item").fill("Shared headphones");
   await page.locator("#save").click();
   await expect(page.locator(".purchase-card")).toContainText(

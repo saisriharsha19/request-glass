@@ -9,9 +9,6 @@ for(const engine of ['chromium'])test(`${engine}: every dialog contains its cont
    await page.evaluate(id=>{const d=document.getElementById(id) as HTMLDialogElement;d.showModal();},id);
    const dialog=page.locator('#'+id);
    if(id==='purchase-dialog') {
-    await page.locator('button[data-method="manual"]').click();
-    expect(await page.evaluate(()=>document.activeElement?.id)).not.toBe('item');
-    await page.locator('button[data-method="paste"]').click();
     await page.locator('#item').fill('Very long purchase title '.repeat(7));
     await page.locator('#notes').fill('https://example.com/'+ 'long-reference'.repeat(70));
     await page.locator('#return').fill('2027-12-31');

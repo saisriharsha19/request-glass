@@ -1404,17 +1404,6 @@ dialog::backdrop {
   line-height: 1.6;
   color: var(--muted);
 }
-.capture-section[data-method="image"] .image-instructions {
-  display: block;
-}
-.capture-section[data-method="image"] > label,
-.capture-section[data-method="image"] #receipt-text,
-.capture-section[data-method="image"] #extract {
-  display: none;
-}
-.capture-section[data-method="manual"] {
-  display: none;
-}
 #ocr-status {
   color: var(--muted);
   font-size: 11px;
@@ -2736,3 +2725,23 @@ dialog input:not([type="checkbox"]), dialog textarea, dialog select { box-sizing
   .record-views { gap:4px; }
   .record-view { flex:1 1 0; justify-content:center; padding:8px 4px; font-size:12px; }
 }
+
+/* One source area and one review form, at every screen size. */
+.capture-section { border:1px solid var(--line); border-radius:9px; padding:16px; }
+.capture-section > label { font-size:14px; font-weight:600; color:var(--ink); }
+.capture-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.form-grid .favorite-filter { grid-column:1 / -1; min-width:0; width:100%; padding:12px; background:#eef1e6; border:1px solid var(--line); border-radius:7px; font-size:14px !important; }
+.form-grid .favorite-filter span { min-width:0; overflow-wrap:anywhere; }
+#draft-status { line-height:1.5; margin-bottom:16px; }
+#purchase-dialog .modal-header { margin-bottom:12px; }
+@media(max-width:700px) {
+  .capture-section { padding:12px; }
+  .capture-actions > * { flex:1 1 140px; text-align:center; white-space:normal; }
+  .ai-assist { display:grid; grid-template-columns:minmax(0,1fr); }
+  .ai-assist > div:first-child { min-width:0; }
+  #ai-fill { width:100%; min-height:48px; }
+  .form-section-heading small { flex-basis:100%; margin-left:0; }
+}
+
+.record-basics { margin:16px 0 22px; }
+#purchase-dialog #receipt-text { min-height:90px; }
