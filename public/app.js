@@ -17,6 +17,29 @@ import {
   mergeSuggestions,
 } from "/logic.js";
 const $ = (s) => document.querySelector(s);
+// Navigation density is a device preference, independent of account data.
+const sidebarMedia = matchMedia('(max-width: 720px)');
+const sidebarPreferences = {desktop:false,mobile:false};
+try {
+  const saved = JSON.parse(localStorage.getItem('tuckday:sidebar:v1') || '{}');
+  for (const size of ['desktop','mobile']) sidebarPreferences[size] = saved[size] === true;
+} catch {}
+function renderSidebar() {
+  const compact = sidebarPreferences[sidebarMedia.matches ? 'mobile' : 'desktop'];
+  $('.app-shell').classList.toggle('sidebar-collapsed', compact);
+  const toggle = $('#sidebar-toggle');
+  toggle.setAttribute('aria-expanded', String(!compact));
+  toggle.setAttribute('aria-label', compact ? 'Expand sidebar' : 'Collapse sidebar');
+  toggle.title = compact ? 'Expand sidebar' : 'Collapse sidebar';
+}
+$('#sidebar-toggle').onclick = () => {
+  const size = sidebarMedia.matches ? 'mobile' : 'desktop';
+  sidebarPreferences[size] = !sidebarPreferences[size];
+  try { localStorage.setItem('tuckday:sidebar:v1', JSON.stringify(sidebarPreferences)); } catch {}
+  renderSidebar();
+};
+sidebarMedia.addEventListener('change', renderSidebar);
+renderSidebar();
 const sync = new PurchaseSync();
 let documentController = null;
 let planner;
@@ -1114,6 +1137,7 @@ function selectWorkspace(selected) {
   const changed=selected!==activeWorkspace;
   if(viewReady&&changed&&!applyingView){savedScroll[activeWorkspace]=scrollY;saveView();}
   activeWorkspace=selected;
+  document.body.dataset.surface=selected;
   for (const button of document.querySelectorAll("[data-workspace]"))
     button.setAttribute(
       "aria-pressed",

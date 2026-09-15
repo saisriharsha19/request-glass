@@ -20,28 +20,31 @@
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar">
+      <aside class="sidebar" aria-label="Sidebar">
+        <div class="sidebar-heading">
         <a href="/" class="brand"
           ><span class="radar-logo" data-icon="mark" aria-hidden="true"></span>
           Tuck<span>day</span></a
         >
+        <button type="button" id="sidebar-toggle" aria-controls="sidebar-navigation sidebar-tools" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16m7-11-3 3 3 3"/></svg></button>
+        </div>
         <div class="workspace-label">YOUR SPACE</div>
-          <nav class="workspace-tabs" aria-label="Workspace">
-            <button type="button" data-workspace="items" disabled aria-pressed="true">
-              <span data-icon="folder"></span> Records
+          <nav id="sidebar-navigation" class="workspace-tabs" aria-label="Workspace">
+            <button type="button" data-workspace="items" aria-label="Records" title="Records" disabled aria-pressed="true">
+              <span data-icon="folder"></span> <span class="nav-label">Records</span>
             </button>
-            <button type="button" data-workspace="planner" disabled aria-pressed="false">
-              <span data-icon="calendar"></span> Calendar
+            <button type="button" data-workspace="planner" aria-label="Calendar" title="Calendar" disabled aria-pressed="false">
+              <span data-icon="calendar"></span> <span class="nav-label">Calendar</span>
             </button>
             <button
               type="button"
-              data-workspace="insights" disabled
+              data-workspace="insights" aria-label="Insights" title="Insights" disabled
               aria-pressed="false"
             >
-              <span data-icon="chart"></span> Insights
+              <span data-icon="chart"></span> <span class="nav-label">Insights</span>
             </button>
           </nav>
-        <div class="sidebar-bottom">
+        <div id="sidebar-tools" class="sidebar-bottom">
           <div class="local-badge">
             <span class="green-dot"></span> Saved records
           </div>

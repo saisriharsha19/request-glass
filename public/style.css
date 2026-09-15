@@ -2745,3 +2745,56 @@ dialog input:not([type="checkbox"]), dialog textarea, dialog select { box-sizing
 
 .record-basics { margin:16px 0 22px; }
 #purchase-dialog #receipt-text { min-height:90px; }
+
+/* Stationery surfaces: static ink patterns, with solid paper under dense content. */
+body {
+  background-color:#f6f3e9;
+  background-image:radial-gradient(#52684b24 .8px, transparent .8px);
+  background-size:20px 20px;
+}
+body[data-surface="planner"] {
+  background-color:#f1f4ef;
+  background-image:linear-gradient(#52684b0d 1px,transparent 1px);
+  background-size:100% 28px;
+}
+body[data-surface="insights"] {
+  background-color:#f2f3f5;
+  background-image:linear-gradient(#49617a0c 1px,transparent 1px),linear-gradient(90deg,#49617a0c 1px,transparent 1px);
+  background-size:28px 28px;
+}
+body.account-page {
+  background-color:#f6f0e7;
+  background-image:radial-gradient(#ad533623 1px,transparent 1px);
+  background-size:24px 24px;
+}
+.page { min-height:100vh; }
+.page > header { background:#fffefaeb; }
+.sidebar { background:#efeee3; z-index:2; overflow-y:auto; }
+.sidebar-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+#sidebar-toggle { display:grid; place-items:center; flex:none; width:36px; height:44px; padding:0; border:1px solid #cbd0c0; border-radius:8px; background:#fffefa; color:var(--green); }
+#sidebar-toggle:hover { background:#e1e6d6; }
+.sidebar .workspace-tabs .rr-icon { width:20px; height:20px; flex:none; }
+.sidebar .workspace-tabs button > [data-icon] { display:flex; flex:none; }
+/* The wrapper owns the search outline, including its icon and rounded corners. */
+.search-wrap { border-color:#cdd3c4; border-radius:8px; gap:8px; }
+.search-wrap input { min-width:0; border:0; border-radius:0; box-shadow:none; }
+.search-wrap:focus-within { border-color:var(--green); outline:2px solid var(--green); outline-offset:-2px; }
+input:not([type="checkbox"]):focus-visible, textarea:focus-visible, select:focus-visible { outline-offset:-1px; }
+.search-wrap input:focus-visible { outline:none; }
+@media(min-width:721px) {
+  .sidebar-collapsed .sidebar { width:76px; padding:24px 12px; }
+  .sidebar-collapsed .sidebar-heading { justify-content:center; }
+  .sidebar-collapsed .brand, .sidebar-collapsed .workspace-label,
+  .sidebar-collapsed .nav-label, .sidebar-collapsed .sidebar-bottom { display:none; }
+  .sidebar-collapsed .sidebar .workspace-tabs { margin-top:28px; }
+  .sidebar-collapsed .sidebar .workspace-tabs button { justify-content:center; min-height:48px; padding:12px; }
+  .sidebar-collapsed .page { margin-left:76px; }
+}
+@media(max-width:720px) {
+  #sidebar-toggle { width:44px; }
+  .sidebar-collapsed .workspace-tabs, .sidebar-collapsed .sidebar-bottom { display:none; }
+}
+.sidebar-collapsed #sidebar-toggle svg path { transform:scaleX(-1); transform-origin:14px 12px; }
+@media(min-width:721px) and (max-width:1150px) {
+  .sidebar-heading .brand { font-size:18px; gap:6px; }
+}
